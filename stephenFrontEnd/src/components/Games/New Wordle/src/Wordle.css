@@ -1,0 +1,178 @@
+
+.colx {
+}
+
+.container {
+    position: relative;
+    /* border: 1px solid black; */
+    width: 100%;
+    height: 100%;
+ }
+
+.word {
+    position: absolute;
+    bottom: 120px;
+}
+
+.word input {
+    font-size: 20px;
+    width: 100%;
+}
+.selector  {
+    padding: 10px 0px;
+    font-size: x-large;
+    font-weight: bold;
+    background-color: rgb(248, 253, 255);
+    text-align: center;
+    margin: 0px -10px 10px -10px;
+}
+.selector span {
+    margin: 8px;
+    padding: 0px 18px;
+    border: 1px solid black;
+    border-radius: 8px;
+    background-color: beige;
+}
+
+  /* Wordle  */
+
+  .selector span {
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+.likes__wrapper{
+    display:flex;
+    align-content:center;
+    justify-content:center;
+     
+  }
+  .likes__relavance{
+    position:relative;
+    padding:0 80px;
+  }
+  .likes__list{
+    position:absolute;
+    box-sizing: border-box;
+    overflow-y:scroll;
+    max-height:250px;
+    left:5%;
+    z-index:999;
+    background:white;
+    padding:10px;
+    border:1px solid grey;
+    box-shadow: 0 0 2px 2px grey;
+  }
+
+  /* LetterCell  */
+
+.letter-cell {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    margin-right: 3px;
+    border: 1px solid black;
+    border-radius: 2px;
+    text-align: center;
+    line-height: 30px;
+}
+
+  /* DisplayWord */
+
+  .display-word-row {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  
+  .letter-input-wrapper {
+    display: inline-block;
+    margin-right: 3px;
+  }
+  
+  .letter-input {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    border: 1px solid black;
+    border-radius: 2px;
+    font-weight: bold;
+  }
+  
+/* ProgressBar */
+  
+.progress-container {
+    border: 2px solid black;
+    height: 15px;
+    width: 100%;
+    background-color: white;
+  }
+  
+  .progress-bar {
+    background-color: green;
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+  }
+
+  /* ResizableBox */
+  
+.resizable-container {
+    background: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 30px 40px rgba(0, 0, 0, 0.1);
+    margin-left: 20px;
+  }
+
+/* Word  */
+  
+.clear-icon {
+    font-size: 20px;
+    margin: 0 auto 10px auto;
+    display: table;
+    cursor: pointer;
+  }
+  
+  .word-input-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .suggestion-list {
+    font-size: 12px;
+    overflow-y: auto;
+    text-align: center;;
+  }
+  
+  .suggestion-word {
+    cursor: pointer;
+  }
+  
+  .suggestion-label {
+    margin: 5px 0px;
+  }
+
+  .letter-box-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  /* Quord */
+
+.likes__list {
+    font-size: 12px;
+    margin-top: 10px;
+    overflow-x: auto;
+  }
+  
+  .likes__relevance {
+    margin-top: 1rem;
+  }
+  
+  .likes__relevance span {
+    cursor: pointer;
+  }

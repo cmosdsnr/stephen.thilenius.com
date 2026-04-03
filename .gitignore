@@ -1,0 +1,23 @@
+# PlatformIO build output
+4inDisplay_S3/.pio/
+
+# Node modules
+espserver/node_modules/
+stephenFrontEnd/node_modules/
+sprinklerApp/node_modules/
+sprinklerApp/android/
+
+# React build output (generated from espserver via go.bat)
+espserver/build/
+4inDisplay_S3/data/static/
+
+# Expo / React Native
+sprinklerApp/.expo/
+sprinklerApp/dist/
+
+# Generated docs
+4inDisplay_S3/docs/html/
+
+# Misc
+*.pyc
+.DS_Store

@@ -1,0 +1,39 @@
+.pic {
+    width: 400px;
+    margin-right: 5px;
+}
+
+.box {
+    background-size: 200px;
+    background-repeat: no-repeat;
+    width: 200px;
+    min-height: 120px;
+    text-align: center;
+    font-size: 30px;
+    padding-top: 70px;
+    margin-right: 30px;
+    display: inline-block;
+}
+
+button {
+    margin: 5px;
+}
+
+/* make the thumbnail area square so rotations always fit */
+.thumbBox {
+  position: relative;
+  aspect-ratio: 1 / 1;   /* square; change if you prefer a different ratio */
+  overflow: hidden;      /* hide any tiny rounding overflow */
+  margin: 0;             /* keep your existing figure spacing if needed */
+}
+
+/* make the image fill the box while preserving aspect */
+.thumbImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* entire image visible with letterboxing if needed */
+  transform-origin: center center;
+  transition: transform 120ms ease; /* optional nicety */
+}

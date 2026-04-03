@@ -1,0 +1,101 @@
+ 
+table {
+    width: 800px;
+  }
+  
+tr {
+border: 1px solid black;
+}
+th {
+border-bottom: 1px solid black;
+}
+
+td {
+border: 1px solid black;
+text-align: center;
+}
+
+.chSel {
+    text-align: center;
+    margin-left: 10px;
+    width: 40px;
+}
+/* Customize the slider track color */
+.rc-slider-track {
+  background-color: #2e495b; /* Replace with your desired color */
+}
+
+/* Customize the slider handle color */
+.rc-slider-handle {
+    border-color: #3498db; /* Replace with your desired color */
+    width: 20px; /* Set desired width */
+    height: 20px; /* Set desired height */
+    margin-top: -8px; /* Adjust to center the handle */
+  }
+  
+  /* Customize the slider rail color */
+.rc-slider-rail {
+  background-color: #3498db; /* Replace with your desired color */
+  height: 8px;
+  margin-top: -2px;
+}
+
+/* Customize the active handle color */
+.rc-slider-handle:active {
+  border-color: #2980b9; /* Replace with your desired color */
+}
+
+/* Customize the hovered handle color */
+.rc-slider-handle:hover {
+  border-color: #2980b9; /* Replace with your desired color */
+}
+
+/* Customize the focus handle color */
+.rc-slider-handle:focus {
+  border-color: #2980b9; /* Replace with your desired color */
+}
+
+.chart {
+    width: 100%;
+    height: 400px;
+    background-color: white;
+    margin-top: 20px;
+    border: solid 1px black;
+  }
+
+
+  input[type="file"]::file-selector-button {
+  background-color: #444;  /* darker background */
+  color: white;            /* text color */
+  border: none;            /* remove default border */
+  padding: 0.5rem 1rem;    /* adjust size */
+  border-radius: 4px;      /* rounded corners */
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background-color: #222;  /* even darker on hover */
+}
+
+[data-bs-theme="light"] .nav-tabs .nav-link:not(.active) {
+  border-color: #999;
+    background-color: #c6c6c6; /* Light background for inactive tabs */
+    color: #1632a2; /* Dark text for better contrast */
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link:not(.active) {
+  border-color: #666;
+  background-color: #444; /* Darker background for inactive tabs */
+    color: #b0c4de; /* Lighter text for better contrast */
+}
+
+
+[data-bs-theme="light"] .nav-tabs .nav-link.active {
+  border-color: #999;
+  border-bottom: none;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+  border-color: #666;
+  background-color: #999;
+}

@@ -1,0 +1,14 @@
+{
+    "name": "Thilenius Backend",
+    "entryPoints": [
+        "src/**/*.ts*",
+      ],
+        "exclude": [
+    "src/blossomWords.ts"
+  ],
+    "out": "docs",
+    "excludePrivate": true,
+    "readme": "Readme.md",
+    "includeVersion": true,
+    "useFirstParagraphOfCommentAsSummary": true
+  }

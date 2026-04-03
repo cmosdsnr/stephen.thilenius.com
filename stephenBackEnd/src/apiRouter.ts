@@ -1,0 +1,49 @@
+// apiRouter.ts
+import express, { Request, Response, Router } from "express";
+
+import { sprinklerRoutes } from "sprinkler";
+import { powerMeterRoutes } from "powerMeter";
+import { solarEdgeRoutes } from "solarEdge";
+import { ultimeterRoutes } from "ultimeter";
+import { albumsAndBoxesRoutes } from "albums";
+import { blossomRoutes } from "blossom";
+import { espRoutes } from "esp";
+// import { davisAnemometer } from "davisAnemometer";
+import { fileShareRoutes } from "fileShare";
+import { localPortalRoutes } from "localPortal";
+
+/**
+ * Creates and configures the main API router by mounting various sub-routers
+ * and defining core endpoints (debug and test).
+ *
+ * @returns A configured Express Router with all API routes mounted.
+ */
+export function createApiRouter(): Router {
+  const router = express.Router();
+
+  // Mount sub-routers for different API modules
+  router.use(sprinklerRoutes());
+  router.use(powerMeterRoutes());
+  router.use(solarEdgeRoutes());
+  router.use(ultimeterRoutes());
+  router.use(albumsAndBoxesRoutes());
+  router.use(blossomRoutes());
+  router.use(espRoutes());
+  // router.use(davisAnemometer());
+  router.use(fileShareRoutes());
+
+  // Admin-only proxy portal — forwards /portal/* to http://192.168.1.96
+  router.use(localPortalRoutes());
+
+  /**
+   * Basic test endpoint to confirm that the API server is up and running.
+   *
+   * @route GET /test
+   * @returns A plain-text greeting indicating server health.
+   */
+  router.get("/test", (_req: Request, res: Response) => {
+    res.send("API says Hello, TypeScript & Express!");
+  });
+
+  return router;
+}

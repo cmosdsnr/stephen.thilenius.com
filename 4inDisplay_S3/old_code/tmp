@@ -1,0 +1,363 @@
+#ifdef DESK
+
+#include <TFT_eWidget.h> // Widget library
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include "bmp.h"
+#include "Tabs.h"
+#include "Desk/TabDesk.h"
+#include "Desk/Ultimeter.h"
+#include "Report.h"
+#include "Buzzer.h"
+#include "Clock.h"
+
+#define LINE_H 25
+#define LINE_START TAB_H + 70
+
+TabDesk::TabDesk(TFT_eSPI *tft) : Tab()
+{
+    name = "Wind";
+    bgColor = 0xd7ff;
+    _tft = tft;
+    nameWidth = _tft->textWidth(name.c_str(), 2);
+    changed = true;
+}
+
+void TabDesk::draw()
+{
+    changed = false;
+    _tft->fillRect(0, TAB_H - CORNER_RADIUS, _tft->width(), _tft->height() - TAB_H + CORNER_RADIUS, bgColor);
+
+    _tft->setTextColor(TFT_BLACK);
+    _tft->setTextSize(1);
+    _tft->setCursor(10, TAB_H);
+    _tft->print("    Speed:");
+
+    _tft->setCursor(10, TAB_H + 30);
+    _tft->print("Direction:");
+
+    _tft->setTextSize(2);
+
+    _tft->setCursor(10, LINE_START + 0 * LINE_H);
+    _tft->print("    Speed:");
+    _tft->setCursor(10, LINE_START + 1 * LINE_H);
+    _tft->print("Direction:");
+    _tft->setCursor(10, LINE_START + 2 * LINE_H);
+    _tft->print("    Count:");
+    _tft->setCursor(10, LINE_START + 3 * LINE_H);
+    _tft->print("Last Sent:");
+    _tft->setCursor(10, LINE_START + 4 * LINE_H);
+    _tft->print("     Hour:");
+    _tft->setCursor(10, LINE_START + 5 * LINE_H);
+    _tft->print("     Tick:");
+}
+
+void TabDesk::handle(uint16_t x, uint16_t y, uint32_t lastClick)
+{
+    if (lastClick > 500)
+    {
+        // buttons are on left
+        if (y > 0 && y < 480)
+        {
+            quickBeep();
+        }
+        else
+            Report.printf("Nothing x: %d y: %d\n", x, y);
+    }
+}
+
+void TabDesk::loop()
+{
+    pingServer(); // ping the server if needed
+    static bool lastSpeed = false, lastDirection = false, sentZero = false, lastDavisSpd = false;
+    static uint8_t sentCnt = 0;
+
+    if (ultimeter->getSpeedPin() != lastSpeed || ultimeter->getDirectionPin() != lastDirection)
+    {
+        if (ultimeter->getSpeedPin() != lastSpeed)
+        {
+            lastSpeed = !lastSpeed;
+            _tft->fillCircle(80, TAB_H + 0, 8, lastSpeed ? TFT_RED : TFT_GREEN);
+        }
+        if (ultimeter->getDirectionPin() != lastDirection)
+        {
+            lastDirection = !lastDirection;
+            _tft->fillCircle(80, TAB_H + 30, 8, lastDirection ? TFT_RED : TFT_GREEN);
+        }
+    }
+    // if (ultimeter->getDavisSpdPin() != lastDavisSpd)
+    // {
+    //     lastDavisSpd = !lastDavisSpd;
+    //     _tft->fillCircle(280, TAB_H + 60, 8, lastDavisSpd ? TFT_RED : TFT_GREEN);
+    //     Serial0.printf("Davis Speed: %d\n", lastDavisSpd);
+    // }
+
+    static int64_t last = millis();
+    static float s = 0;
+    static uint16_t d = 0;
+    if (millis() - last > 1000)
+    {
+        // Serial0.printf("Davis Speed: %d Dir: %d\n", lastDavisSpd, analogReadMilliVolts(DAVIS_DIR));
+        last = millis();
+        _tft->fillRect(140, LINE_START, 100, 3 * LINE_H, bgColor);
+        uint16_t c = ultimeter->getCount();
+        if (c > 0)
+        {
+            s = ultimeter->getSpeed();
+            d = ultimeter->getDirection();
+        }
+        else
+        {
+            // Serial0.printf("Count: %d\n", c);
+        }
+        writeVariable("Speed", String(s));
+        writeVariable("Direction", String(d));
+        writeVariable("Count", String(c));
+
+        if (c > 0)
+            _tft->setTextColor(TFT_BLACK);
+        else
+            _tft->setTextColor(TFT_GREY);
+
+        _tft->setTextSize(2);
+        _tft->setCursor(140, LINE_START);
+        _tft->printf("%2.1f", s / 10);
+        _tft->setCursor(140, LINE_START + 1 * LINE_H);
+        _tft->printf("%d", d);
+
+        // Serial0.printf("s: %2.1f\td: %d\tc: %d\n", s / 10, d, c);
+
+        _tft->setCursor(140, LINE_START + 2 * LINE_H);
+        _tft->printf("%d", c);
+    }
+
+    static uint64_t lastHr = 0;
+    static uint64_t lastTick = 0;
+    static uint64_t lastMillis = 0;
+    if (lastMillis == 0)
+    {
+        time(&timeSinceEpoch);
+        lastMillis = 1000 * (15 - timeSinceEpoch % 15);
+        Serial0.printf("lastMillis: %ld\n", lastMillis);
+    }
+    if (lastMillis + 15000 < millis())
+    {
+        lastMillis += 15000;
+        time(&timeSinceEpoch);
+        uint64_t hr = timeSinceEpoch / 3600L;
+        uint64_t tick = (timeSinceEpoch - hr * 3600L) / 15L;
+        if (hr != lastHr || tick != lastTick)
+        {
+            lastHr = hr;
+            lastTick = tick;
+
+            _tft->fillRect(140, LINE_START + 3 * LINE_H, 340, 3 * LINE_H, bgColor);
+            _tft->setTextColor(TFT_BLACK);
+            _tft->setTextSize(2);
+            _tft->setCursor(140, LINE_START + 4 * LINE_H);
+            _tft->printf("%lld", hr);
+            _tft->setCursor(140, LINE_START + 5 * LINE_H);
+            _tft->printf("%lld", tick);
+
+            time_t eTime = hr * 3600 + tick * 15;
+            struct tm *timeInfo;
+            char buffer[30];
+            // setenv("TZ", "PST8PDT", 1);
+            // tzset();
+            timeInfo = localtime(&eTime);
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+            // _tft->printf("%lld %lld %lld", hr, tick, hr * 3600 + tick * 15);
+
+            _tft->setCursor(140, LINE_START + 3 * LINE_H);
+            _tft->printf("%s", buffer);
+
+            // Serial0.printf("%lld %lld %lld\n", hr, tick, hr * 3600 + tick * 15);
+            uint16_t c = ultimeter->getCount();
+            if (c > 4)
+            {
+                sentZero = false; // reset the zero flag, sending data again
+                sentCnt = 0;      // reset the counter
+                sendWindDataToServer(hr, tick, ultimeter->getSpeed() / 10, ultimeter->getDirection());
+                ultimeter->reset();
+            }
+            else if (!sentZero) // no data, and we have not sent a zero
+            {
+                sentCnt++; // increment 4x for 1 min total
+                if (sentCnt >= 4)
+                {
+                    sentZero = true;                        // don't comme here again until real data was sent again
+                    sentCnt = 0;                            // reset the counter
+                    sendWindDataToServer(hr, tick, 0, 270); // send just once
+                }
+            }
+        }
+    }
+}
+
+/**********************************************************************************/
+void TabDesk::sendWindDataToServerOld(uint64_t hour, uint64_t tick, float speed, uint16_t direction)
+{
+    static bool open = false;
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        if (!open || !http.connected())
+        {
+            open = true;
+            // Set the root certificate for the server
+            // client.setCACert(root_ca);
+            client.setInsecure();
+            // Specify the URL
+            String url = "https://servert.thilenius.com/ultimeterUpdate";
+            http.begin(client, url);
+        }
+        // Prepare the payload
+        String payload = "{\"hour\":" + String(hour) + ",\"tick\":" + String(tick) + ",\"speed\":" + String(speed) + ",\"direction\":" + String(direction) + "}";
+
+        // Specify content-type header
+        http.addHeader("Content-Type", "application/json");
+
+        // Send the POST request
+        int httpResponseCode = http.POST(payload);
+
+        // Check the response code
+        if (httpResponseCode > 0)
+        {
+            String responseBody = http.getString();
+            Serial0.println("Response body:");
+            Serial0.println(responseBody);
+        }
+        else
+        {
+            Serial0.print("Error code: ");
+            Serial0.println(httpResponseCode);
+        }
+
+        // http.end(); // Free the resources
+    }
+    else
+    {
+        Serial0.println("WiFi Disconnected");
+        return;
+    }
+}
+
+void sendWindDataTask(void *parameter)
+{
+    WindData *data = (WindData *)parameter;
+
+    // Prepare the payload
+    String payload = "{\"hour\":" + String(data->hour) + ",\"tick\":" + String(data->tick) + ",\"speed\":" + String(data->speed) + ",\"direction\":" + String(data->direction) + "}";
+
+    // Specify content-type header
+    data->http->addHeader("Content-Type", "application/json");
+
+    // Send the POST request
+    int httpResponseCode = data->http->POST(payload);
+
+    // Check the response code
+    if (httpResponseCode > 0)
+    {
+        String responseBody = data->http->getString();
+        Serial0.println("Response body:");
+        Serial0.println(responseBody);
+    }
+    else
+    {
+        Serial0.print("Error code: ");
+        Serial0.println(httpResponseCode);
+    }
+
+    // Free the allocated memory
+    delete data;
+    data->http->end(); // Free the resources
+    // Delete the task when done
+    vTaskDelete(NULL);
+}
+
+void TabDesk::sendWindDataToServer(uint64_t hour, uint64_t tick, float speed, uint16_t direction)
+{
+    lastComm = millis();
+    static bool open = false;
+    if (WiFi.status() == WL_CONNECTED)
+    {
+
+        client.setInsecure();
+        String url = "https://servert.thilenius.com/ultimeterUpdate";
+        http.begin(client, url);
+        WindData *data = new WindData;
+        data->hour = hour;
+        data->tick = tick;
+        data->speed = speed;
+        data->direction = direction;
+        data->http = &http;
+
+        // Create a new task to send the data
+        xTaskCreate(
+            sendWindDataTask, // Task function
+            "SendWindData",   // Task name
+            8192,             // Stack size (in words)
+            data,             // Task input parameter
+            1,                // Priority of the task
+            NULL              // Task handle
+        );
+    }
+}
+
+void sendWindPingTask(void *parameter)
+{
+    PingData *data = (PingData *)parameter;
+    int httpResponseCode = data->http->GET();
+
+    // Check the response code
+    if (httpResponseCode > 0)
+    {
+        String responseBody = data->http->getString();
+        Serial0.println("Response body:");
+        Serial0.println(responseBody);
+    }
+    else
+    {
+        Serial0.print("Error code: ");
+        Serial0.println(httpResponseCode);
+    }
+
+    // Free the allocated memory
+    delete data;
+    data->http->end(); // Free the resources
+    // Delete the task when done
+    vTaskDelete(NULL);
+}
+
+void TabDesk::pingServer()
+{
+    // run every three minutes if nothing else has happened, and on startup
+    if (lastComm > 0 && millis() - lastComm < 180000)
+        return;
+    lastComm = millis();
+    static bool open = false;
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        client.setInsecure();
+        client.setCertificate(ca_cert);
+        String url = "https://servert.thilenius.com/ultimeterPing";
+        http.begin(client, url);
+        PingData *data = new PingData;
+        data->http = &http;
+
+        // Create a new task to send the data
+        xTaskCreate(
+            sendWindPingTask, // Task function
+            "SendWindPing",   // Task name
+            8192,             // Stack size (in words)
+            data,             // Task input parameter
+            1,                // Priority of the task
+            NULL              // Task handle
+        );
+    }
+}
+
+#endif

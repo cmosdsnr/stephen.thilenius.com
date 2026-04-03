@@ -1,0 +1,221 @@
+#ifdef POWERMETER
+#include <Arduino.h>
+#include "Clock.h"
+#include "Tabs.h"
+#include "Report.h"
+#include "I2C.h"
+#include <Wire.h>
+#include "ADS1X15.h" // Rob Tillaart library
+
+// -------------------- Globals --------------------
+bool isPowerMeterEnabled = false;
+
+// Two ADS1115s at 0x48 and 0x49
+ADS1115 ads48(0x48);
+ADS1115 ads49(0x49);
+
+// counters / state
+volatile int16_t a0cnt = -2, a1cnt = -2; // sample index (-2 skips 2 post-MUX samples)
+volatile bool sampleReady0 = false, sampleReady1 = false;
+
+int16_t a0ch = 0, a1ch = 0; // channel index [0..2]
+int16_t p0[3][860];
+int16_t p1[3][860];
+
+portMUX_TYPE alert0MuxMain = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE alert1MuxMain = portMUX_INITIALIZER_UNLOCKED;
+
+// Rob Tillaart differential MUX codes
+// (these #defines are in ADS1X15.h)
+const uint8_t muxChannels[3] = {1, 2, 3};
+
+// -------------------- ISRs (keep tiny) --------------------
+void IRAM_ATTR alert0()
+{
+    portENTER_CRITICAL_ISR(&alert0MuxMain);
+    if (a0cnt < 860)
+    {
+        a0cnt++;
+        if (a0cnt >= 0)
+            sampleReady0 = true;
+    }
+    portEXIT_CRITICAL_ISR(&alert0MuxMain);
+}
+
+void IRAM_ATTR alert1()
+{
+    portENTER_CRITICAL_ISR(&alert1MuxMain);
+    if (a1cnt < 860)
+    {
+        a1cnt++;
+        if (a1cnt >= 0)
+            sampleReady1 = true;
+    }
+    portEXIT_CRITICAL_ISR(&alert1MuxMain);
+}
+
+void check_ads()
+{
+    Wire.beginTransmission(0x48);
+    if (Wire.endTransmission() != 0)
+    {
+        Report.println("ADS48 not found!");
+        return;
+    }
+    Wire.beginTransmission(0x49);
+    if (Wire.endTransmission() != 0)
+    {
+        Report.println("ADS49 not found!");
+        return;
+    }
+    Report.println("ADS48 and 49 are present!");
+}
+
+// -------------------- Helpers --------------------
+// Configure ALERT/RDY to pulse each conversion (active-low, non-latching)
+static void enableReadyPulse(ADS1115 &ads)
+{
+    ads.setComparatorThresholdLow(0x0000);
+    ads.setComparatorThresholdHigh(0xFFFF);
+    ads.setComparatorQueConvert(0); // assert after 1 conversion
+    ads.setComparatorPolarity(0);   // active-low
+    ads.setComparatorLatch(0);      // non-latching
+}
+
+// Start conversions on a given differential mux
+static void startChannel(ADS1115 &ads, uint8_t mux)
+{
+    // Library notes:
+    // - requestADC(mux) starts a conversion on the given mux
+    // - with comparator set as above, ALERT will pulse when the conversion finishes
+    ads.requestADC(mux);
+}
+
+// -------------------- Setup --------------------
+void powerMeterSetup(void)
+{
+    isPowerMeterEnabled = true;
+
+    if (!ads48.begin())
+    {
+        Report.println("Failed to initialize ADS at 0x48.");
+        isPowerMeterEnabled = false;
+    }
+    if (!ads49.begin())
+    {
+        Report.println("Failed to initialize ADS at 0x49.");
+        isPowerMeterEnabled = false;
+    }
+    if (!isPowerMeterEnabled)
+        return;
+
+    // Gain & DataRate: gain=2 => ±2.048 V FSR; DR=7 => 860 SPS
+    ads48.setGain(2);
+    ads49.setGain(2);
+    ads48.setDataRate(7);
+    ads49.setDataRate(7);
+
+    // Configure ALERT pins (open-drain -> pull-up to 3.3V)
+    pinMode(ALERT0_PIN, INPUT_PULLUP);
+    pinMode(ALERT1_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ALERT0_PIN), alert0, FALLING);
+    attachInterrupt(digitalPinToInterrupt(ALERT1_PIN), alert1, FALLING);
+
+    // Make ALERT a conversion-ready output
+    enableReadyPulse(ads48);
+    enableReadyPulse(ads49);
+
+    // Prime state
+    a0cnt = -2;
+    a1cnt = -2;
+    a0ch = 0;
+    a1ch = 0;
+
+    // Start measuring first channels (differential 0-3 on both)
+    startChannel(ads48, muxChannels[a0ch]);
+    startChannel(ads49, muxChannels[a1ch]);
+
+    Report.println("PowerMeter: ADS ready (Rob Tillaart lib, ALERT=RDY, 860 SPS).");
+}
+
+// -------------------- Loop --------------------
+time_t lastStart = 0;
+bool running = false;
+uint16_t c0 = 0, c1 = 0;
+
+bool powerMeterLoop(void)
+{
+    if (!isPowerMeterEnabled)
+        return false;
+
+    // run 1s capture every 5s (like your original logic)
+    if (lastStart == 0 || (!running && (millis() - lastStart > 5000)))
+    {
+        lastStart = millis();
+        running = true;
+        a0cnt = -2;
+        a1cnt = -2;
+        c0 = 0;
+        c1 = 0;
+
+        // (Re)start conversions on current mux selections
+        startChannel(ads48, muxChannels[a0ch]);
+        startChannel(ads49, muxChannels[a1ch]);
+    }
+
+    // Drain ready samples (keep ISR light; do I2C reads here)
+    if (sampleReady0)
+    {
+        sampleReady0 = false;
+        c0++;
+
+        // When comparator asserts for the finished conversion, getValue() returns it.
+        int16_t v = ads48.getValue();
+        if (a0cnt >= 0 && a0cnt < 860)
+        {
+            p0[a0ch][a0cnt] = v;
+        }
+
+        // Immediately kick the NEXT conversion on the same mux,
+        // so ALERT will pulse again in ~1.16 ms at DR=7.
+        if (a0cnt < 859)
+        {
+            startChannel(ads48, muxChannels[a0ch]);
+        }
+    }
+
+    if (sampleReady1)
+    {
+        sampleReady1 = false;
+        c1++;
+
+        int16_t v = ads49.getValue();
+        if (a1cnt >= 0 && a1cnt < 860)
+        {
+            p1[a1ch][a1cnt] = v;
+        }
+        if (a1cnt < 859)
+        {
+            startChannel(ads49, muxChannels[a1ch]);
+        }
+    }
+
+    // End of 1-second capture on both ADCs?
+    if (running && a0cnt >= 859 && a1cnt >= 859)
+    {
+        running = false;
+
+        // Rotate to next differential channel (0->1->2->0)
+        a0ch = (a0ch + 1) % 3;
+        a1ch = (a1ch + 1) % 3;
+
+        Report.printf("block done: a0cnt=%d a1cnt=%d c0=%d c1=%d (ch now %d/%d)\n",
+                      a0cnt, a1cnt, c0, c1, a0ch, a1ch);
+
+        // (Optional) process p0/p1 buffers here…
+    }
+
+    return running; // true while sampling (blocks your long TFT touch as before)
+}
+
+#endif

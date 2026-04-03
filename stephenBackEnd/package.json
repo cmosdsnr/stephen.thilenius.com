@@ -1,0 +1,61 @@
+{
+  "name": "backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "public/logs/*.json"
+    ]
+  },
+  "scripts": {
+    "dev": "tsx watch src/app.ts NODE_OPTIONS=--trace-warnings",
+    "exes": "-r dotenv/config   dotenv_config_path=.env.local dotenv_config_debug=true",
+    "devX": "tsc && nodemon --watch src -r dotenv/config  dist/src/app.js dotenv_config_path=.env.local dotenv_config_debug=true",
+    "start2": "node dist/src/app.js",
+    "start": "tsx src/app.ts",
+    "build": "tsc",
+    "docs:generate": "typedoc --skipErrorChecking  && cp -r docs\\* \\\\192.168.0.5\\passport\\stephen\\docs\\backend",
+    "docs:serve": "yarn docs:generate && http-server docs -o"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/lodash": "^4.17.5",
+    "@types/multer": "^1.4.11",
+    "@types/ws": "^8.5.10",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "cron": "^4.3.3",
+    "dotenv": "^16.0.3",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-fileupload": "^1.4.0",
+    "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "http-proxy-middleware": "^3.0.5",
+    "ip": "^2.0.1",
+    "lodash": "^4.17.21",
+    "modbus-serial": "^8.0.16",
+    "multer": "^1.4.5-lts.1",
+    "net": "^1.0.2",
+    "node-cron": "^4.2.1",
+    "nodemon": "^2.0.22",
+    "p-limit": "^6.2.0",
+    "path": "^0.12.7",
+    "pocketbase": "^0.25.2",
+    "suncalc": "^1.9.0",
+    "tsx": "^4.15.7",
+    "typescript": "^5.9.2",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/ip": "^1.1.3",
+    "@types/suncalc": "^1",
+    "typedoc": "^0.28.10"
+  },
+  "packageManager": "yarn@4.3.1+sha512.af78262d7d125afbfeed740602ace8c5e4405cd7f4735c08feb327286b2fdb2390fbca01589bfd1f50b1240548b74806767f5a063c94b67e431aabd0d86f7774"
+}

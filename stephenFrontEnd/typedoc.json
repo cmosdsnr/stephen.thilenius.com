@@ -1,0 +1,11 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Thilenius Frontend",
+  "entryPoints": ["src"],
+  "entryPointStrategy": "expand",
+  "out": "docs",
+  "excludePrivate": true,
+  "readme": "Readme.md",
+  "includeVersion": true,
+  "highlightLanguages": ["jsx", "tsx", "js", "ts", "json", "bash"]
+}

@@ -1,0 +1,82 @@
+# ---- Project ----
+PROJECT_NAME           = "4in Display with ESP32S3"
+OUTPUT_DIRECTORY       = .                  # keep outputs in docs/html and docs/latex
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO                 # disable LaTeX if you don't need PDFs
+GENERATE_TREEVIEW      = YES
+
+SHORT_NAMES    = YES
+CREATE_SUBDIRS = YES
+# ---- What to parse ----
+INPUT                  = ../
+FILE_PATTERNS          = *.h *.hpp *.c *.cc *.cpp *.ino
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */.pio/* */.git/* */test/* */old_code/* */docs/*
+
+# ---- Diagrams (Graphviz) ----
+HAVE_DOT               = YES                # set to YES after installing Graphviz
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+CALL_GRAPH             = NO                 # flip to YES if you want them
+CALLER_GRAPH           = NO
+
+# ---- Parsing quality ----
+EXTRACT_ALL            = YES                # show everything while you dial this in
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = ..
+
+# ---- Preprocessor awareness (Arduino/ESP32 macros) ----
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+
+# Your PlatformIO build flags as Doxygen PREDEFINEDs:
+PREDEFINED             = \
+  ARDUINO \
+  ESP_PLATFORM \
+  ESP32 \
+  CONFIG_IDF_TARGET_ESP32S3 \
+  BOARD_HAS_PSRAM \
+  ELEGANTOTA_USE_ASYNC_WEBSERVER=1 \
+  USE_HSPI_PORT \
+  USER_SETUP_LOADED=1 \
+  ILI9488_DRIVER=1 \
+  TFT_WIDTH=320 \
+  TFT_HEIGHT=480 \
+  TFT_MISO=13 \
+  TFT_MOSI=11 \
+  TFT_SCLK=12 \
+  TOUCH_CS=10 \
+  SD_CS=42 \
+  TFT_CS=21 \
+  TFT_DC=41 \
+  TFT_RST=46 \
+  Z_THRESHOLD=600 \
+  LOAD_GLCD=1 \
+  LOAD_FONT2=1 \
+  LOAD_FONT4=1 \
+  LOAD_FONT6=1 \
+  LOAD_FONT7=1 \
+  LOAD_FONT8=1 \
+  LOAD_GFXFF=1 \
+  SMOOTH_FONT=1 \
+  SPI_FREQUENCY=27000000 \
+  SPI_TOUCH_FREQUENCY=2500000 \
+  SPRINKLER \
+  F_CPU=240000000UL
+
+# If you sometimes build with these, add them (comment out the ones not active):
+#  GARAGE \
+#  COFFEE \
+#  GLIDERPORT \
+#  DESK \
+
+# ---- Clang-assisted parsing (uses compile_commands.json from step 1)
+CLANG_ASSISTED_PARSING = YES
+CLANG_DATABASE_PATH    = ..

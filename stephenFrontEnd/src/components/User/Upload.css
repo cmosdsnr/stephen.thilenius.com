@@ -1,0 +1,44 @@
+/* style.css */
+body {
+    background-color: rgb(6, 26, 27);
+}
+* {
+    box-sizing: border-box;
+}
+.container {
+    border: 1px solid rgba(175,175,255,0.8);
+    border-radius: 10px;
+    margin: 5px;
+    background-color: rgba(175,175,255,0.8);
+}
+
+.container h1 {
+    text-align: center;
+    color: white;
+}
+form {
+    background-color: white;
+    padding: 30px;
+}
+form .input-group {
+    margin-bottom: 15px;
+}
+form label {
+    display: block;
+    margin-bottom: 10px;
+}
+form input {
+    padding: 12px 20px;
+    width: 100%;
+    border: 1px solid #ccc;
+}
+.submit-btn {
+    width: 70%;
+    border: none;
+    background: rgb(43, 65, 164);
+    font-size: 18px;
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}

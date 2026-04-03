@@ -1,0 +1,523 @@
+#ifdef POWERMETER
+#include <Arduino.h>
+#include "Clock.h"
+#include "Tabs.h"
+#include "Report.h"
+#include "I2C.h"
+#include <Wire.h>
+#include <Adafruit_ADS1X15.h>
+
+#include "dsps_fft2r.h"
+#include "dsps_wind_blackman.h"
+
+const int numSamples = 512;
+
+struct DFTResult
+{
+    float maxValue;
+    uint16_t bestBin;
+    float bestFreq;
+    float dft[numSamples / 2]; // Store DFT results array
+};
+
+struct AnalysisResult
+{
+    DFTResult dsp;
+    float amplitude;
+    float mean;
+};
+
+bool isPowerMeterEnabled;
+Adafruit_ADS1115 ads48, ads49;
+int16_t a0cnt = -2, a1cnt = -2;
+int16_t a0ch = 0, a1ch = 0, result48;
+float multiplier = 0.0000625F;
+
+int16_t sample[numSamples];
+
+float goertzel();
+float removeDCOffset();
+AnalysisResult processSamples();
+void initDSP();
+DFTResult calcDFT(void);
+void initGoertzel(float targetFreq);
+
+// Pre-allocated global buffers to avoid stack overflow
+float fscan[21]; // scan results
+uint32_t amplitudeCnt;
+float bestFreq;   // calculated best Frequency from fscan
+uint16_t bestBin; // calculated best Frequency from fscan
+
+float workspace[numSamples]; // for full DFT
+float dft[numSamples / 2];   // DFT results array
+
+bool sampleReady0 = false, sampleReady1 = false;
+
+portMUX_TYPE alert0MuxMain = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE alert1MuxMain = portMUX_INITIALIZER_UNLOCKED;
+
+const uint16_t muxChannels[3] = {
+    ADS1X15_REG_CONFIG_MUX_DIFF_0_3,
+    ADS1X15_REG_CONFIG_MUX_DIFF_1_3,
+    ADS1X15_REG_CONFIG_MUX_DIFF_2_3};
+
+void IRAM_ATTR alert0()
+{
+    portENTER_CRITICAL_ISR(&alert0MuxMain);
+    // Handle alert0
+    a0cnt++;
+    if (a0cnt >= 0)
+        sampleReady0 = true;
+
+    portEXIT_CRITICAL_ISR(&alert0MuxMain);
+}
+
+void IRAM_ATTR alert1()
+{
+    portENTER_CRITICAL_ISR(&alert1MuxMain);
+    // Handle alert1
+    a1cnt++;
+    if (a1cnt >= 0)
+        sampleReady1 = true;
+    portEXIT_CRITICAL_ISR(&alert1MuxMain);
+}
+
+void check_ads()
+{
+    Wire.beginTransmission(0x48);
+    if (Wire.endTransmission() != 0)
+    {
+        Report.println("ADS48 not found!");
+        return;
+    }
+    Wire.beginTransmission(0x49);
+    if (Wire.endTransmission() != 0)
+    {
+        Report.println("ADS49 not found!");
+        return;
+    }
+    Report.println("ADS48 and 49 are present!");
+}
+const char *gainToString(uint16_t gain)
+{
+    switch (gain)
+    {
+    case GAIN_TWOTHIRDS:
+        return "+/-6.144V";
+    case GAIN_ONE:
+        return "+/-4.096V";
+    case GAIN_TWO:
+        return "+/-2.048V";
+    case GAIN_FOUR:
+        return "+/-1.024V";
+    case GAIN_EIGHT:
+        return "+/-0.512V";
+    case GAIN_SIXTEEN:
+        return "+/-0.256V";
+    default:
+        return "Unknown";
+    }
+}
+
+const char *rateToString(uint16_t rate)
+{
+    switch (rate)
+    {
+    case RATE_ADS1115_8SPS:
+        return "8 SPS";
+    case RATE_ADS1115_16SPS:
+        return "16 SPS";
+    case RATE_ADS1115_32SPS:
+        return "32 SPS";
+    case RATE_ADS1115_64SPS:
+        return "64 SPS";
+    case RATE_ADS1115_128SPS:
+        return "128 SPS";
+    case RATE_ADS1115_250SPS:
+        return "250 SPS";
+    case RATE_ADS1115_475SPS:
+        return "475 SPS";
+    case RATE_ADS1115_860SPS:
+        return "860 SPS";
+    default:
+        return "Unknown";
+    }
+}
+
+void powerMeterSetup(void)
+{
+    isPowerMeterEnabled = true;
+    if (!ads48.begin())
+    {
+        Report.println("Failed to initialize ADS at 48.");
+        isPowerMeterEnabled = false;
+    }
+    if (!ads49.begin(0x49))
+    {
+        Report.println("Failed to initialize ADS at 49.");
+        isPowerMeterEnabled = false;
+    }
+    if (!isPowerMeterEnabled)
+        return;
+
+    pinMode(ALERT0_PIN, INPUT_PULLUP);
+    pinMode(ALERT1_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ALERT0_PIN), alert0, FALLING);
+    attachInterrupt(digitalPinToInterrupt(ALERT1_PIN), alert1, FALLING);
+    ads48.setGain(GAIN_TWO); // 2x gain   +/- 2.048V  1 bit = 1mV      0.0625mV
+    ads49.setGain(GAIN_TWO); // 2x gain   +/- 2.048V  1 bit = 1mV      0.0625mV
+    ads48.setDataRate(RATE_ADS1115_860SPS);
+    ads49.setDataRate(RATE_ADS1115_860SPS);
+    // ads48.setConversionReadyPinMode();
+    // ads49.setConversionReadyPinMode();
+    ads48.startADCReading(ADS1X15_REG_CONFIG_MUX_DIFF_1_3, true);
+    ads49.startADCReading(ADS1X15_REG_CONFIG_MUX_DIFF_1_3, true);
+    initDSP();
+    Report.printf("ADS48 DataRate: %s, Gain: %s\n", rateToString(ads48.getDataRate()), gainToString(ads48.getGain()));
+    Report.printf("ADS49 DataRate: %s, Gain: %s\n", rateToString(ads49.getDataRate()), gainToString(ads49.getGain()));
+}
+
+time_t lastPowerMeterReading = 0;
+void powerMeterLoop(void)
+{
+    int16_t results;
+    static uint32_t lastMillis = 0, ch = 0;
+
+    if (!isPowerMeterEnabled)
+        return;
+    float multiplier = 0.0000625F;
+
+    // if (millis() - lastPowerMeterReading > 1000)
+    // {
+    //     Report.println("cnt0=" + String(a0cnt) + ", cnt1=" + String(a1cnt) + " elapsed=" + String(millis() - lastPowerMeterReading));
+    //     a0cnt = 0;
+    //     a1cnt = 0;
+    //     lastPowerMeterReading = millis();
+    // }
+    // return;
+
+    if (sampleReady0)
+    {
+        sampleReady0 = false;
+        // sample[0] = ads48.getLastConversionResults();
+        if (a0cnt >= 0 && a0cnt < 860)
+        {
+            // p0[a0ch][a0cnt] = ads48.getLastConversionResults();
+            sample[a0cnt] = millis() - lastMillis;
+            lastMillis = millis();
+        }
+        else
+            Report.printf("a0cnt out of range: %d\n", a0cnt);
+        if (a0cnt >= 859)
+        {
+            a0ch = (a0ch + 1) % 3;
+            // ads48.startADCReading(muxChannels[a0ch], true);
+            a0cnt = -2;
+        }
+    }
+    if (sampleReady1)
+    {
+        sampleReady1 = false;
+        if (a1cnt >= 0 && a1cnt < 860)
+            p1[a1ch][a1cnt] = ads49.getLastConversionResults();
+        else
+            Report.printf("a1cnt out of range: %d\n", a1cnt);
+        if (a1cnt >= 859)
+        {
+            a1ch = (a1ch + 1) % 3;
+            ads49.startADCReading(muxChannels[a1ch], true);
+            a1cnt = -2;
+        }
+    }
+
+    // static uint16_t delay48 = 841;
+    // static uint16_t delay49 = 13;
+    // static uint16_t sum = 0;
+
+    // lastMillis = millis();
+    // switch (ch)
+    // {
+    // case 0:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads48.readADC_Differential_0_3();
+    //         delayMicroseconds(delay48);
+    //     }
+    //     break;
+    // case 1:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads48.readADC_Differential_1_3();
+    //         delayMicroseconds(delay48);
+    //     }
+    //     break;
+    // case 2:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads48.readADC_Differential_2_3();
+    //         delayMicroseconds(delay48);
+    //     }
+    //     break;
+    // case 3:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads49.readADC_Differential_0_3();
+    //         delayMicroseconds(delay49);
+    //     }
+    //     break;
+    // case 4:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads49.readADC_Differential_1_3();
+    //         delayMicroseconds(delay49);
+    //     }
+    //     break;
+    // case 5:
+    //     for (size_t i = 0; i < numSamples; i++)
+    //     {
+    //         sample[i] = ads49.readADC_Differential_2_3();
+    //         delayMicroseconds(delay49);
+    //     }
+    //     break;
+    // default:
+    //     break;
+    // }
+    // results = millis() - lastMillis;
+
+    // sum += results;
+
+    // if (ch == 2)
+    // {
+    //     if (sum > (int16_t)(3 * numSamples * 1.669))
+    //         delay48--;
+    //     else if (sum < (int16_t)(3 * numSamples * 1.663))
+    //         delay48++;
+    //     sum = 0;
+    // }
+    // if (ch == 5)
+    // {
+    //     if (sum > (int16_t)(3 * numSamples * 1.669))
+    //         delay49--;
+    //     else if (sum < (int16_t)(3 * numSamples * 1.663))
+    //         delay49++;
+    //     sum = 0;
+    // }
+
+    // // for (int i = 200; i < 220; i += 1)
+    // // {
+    // //     if (ch < 3)
+    // //         Report.printf("%.3f ", multiplier * p0[ch][i]);
+    // //     else
+    // //         Report.printf("%.3f ", multiplier * p1[ch - 3][i]);
+    // // }
+    // // Report.println();
+    // float dc = 0.0F;
+    // for (int i = 0; i < numSamples; i++)
+    // {
+    //     dc += sample[i];
+    // }
+    // dc /= (float)numSamples;
+    // dc *= multiplier;
+    // // calculate the standard deviation
+    // float sd = 0.0F;
+    // for (int i = 0; i < numSamples; i++)
+    // {
+    //     sd += (sample[i] - dc / multiplier) * (sample[i] - dc / multiplier);
+    // }
+    // sd = sqrt(sd / (float)numSamples);
+    // sd *= 1000 * multiplier;
+
+    // // calculate min/max
+    // int16_t minVal = sample[0];
+    // int16_t maxVal = sample[0];
+    // for (int i = 1; i < numSamples; i++)
+    // {
+    //     if (sample[i] < minVal)
+    //     {
+    //         minVal = sample[i];
+    //     }
+    //     if (sample[i] > maxVal)
+    //     {
+    //         maxVal = sample[i];
+    //     }
+    // }
+    // if (ch == 1)
+    // {
+    //     float peakToPeak = 1000 * (maxVal - minVal) * multiplier;
+    //     Report.printf("Ch %d, read duration: %d ms (%.3f ms/read),  delay:%d, DC: %.3f V, SD: %.0f mV, Peak-to-Peak: %.0f mV\n",
+    //                   ch, results, (float)results / (float)numSamples, ch < 3 ? delay48 : delay49, dc, sd, peakToPeak);
+
+    //     AnalysisResult analysis = processSamples();
+    //     Report.printf("Mean: %.3f, Amplitude: %.3f, Max DFT: %.3f at %.2f Hz (bin %d)\n",
+    //                   analysis.mean, analysis.amplitude,
+    //                   analysis.dsp.maxValue, analysis.dsp.bestFreq, analysis.dsp.bestBin);
+
+    //     // print first 20 DFT values
+    //     Report.print("DFT (first 20 bins): ");
+    //     for (int i = 0; i < 20; i++)
+    //     {
+    //         Report.printf("%.2f ", analysis.dsp.dft[i]);
+    //     }
+    //     Report.println();
+
+    //     // print first 20 samples
+    //     Report.print("Samples (first 20): ");
+    //     for (int i = 0; i < 20; i++)
+    //     {
+    //         Report.printf("%.3f ", multiplier * sample[i]);
+    //     }
+    //     Report.println();
+    //     Report.println();
+    // }
+    // ch = (ch + 1) % 6;
+
+    // Report.printf("Differential: %.6f, %.6f, %.6f,       %.6f, %.6f, %.6f\n",
+    //               multiplier * ads48.readADC_Differential_0_3(),
+    //               multiplier * ads48.readADC_Differential_1_3(),
+    //               multiplier * ads48.readADC_Differential_2_3(),
+    //               multiplier * ads49.readADC_Differential_0_3(),
+    //               multiplier * ads49.readADC_Differential_1_3(),
+    //               multiplier * ads49.readADC_Differential_2_3());
+
+    // Report.print(ads49.readADC_Differential_2_3());
+    // Report.print(", ");
+    // Report.print(results * multiplier);
+    // Report.println("mV)");
+
+    if (millis() - lastPowerMeterReading < 900)
+        return;
+    lastPowerMeterReading = millis();
+    Report.printf("a0cnt=%d a1cnt=%d\n", a0cnt, a1cnt);
+
+    // for (int i = 200; i < 220; i += 1)
+    // {
+    //     Report.printf("%d ", sample[i]);
+    // }
+    // Report.println();
+    // Report.printf("numSamples reads: %d ms (%.3f ms/read)\n", results, (float)results / numSamples.0F);
+}
+
+static float window[numSamples];
+
+AnalysisResult processSamples()
+{
+    AnalysisResult result;
+    result.mean = removeDCOffset();
+    result.amplitude = goertzel();
+    result.dsp = calcDFT();
+    return result;
+}
+
+void initDSP()
+{
+
+    initGoertzel(60.0f); // 60Hz
+    // Initialize the Blackman window
+    dsps_wind_blackman_f32(window, numSamples);
+
+    esp_err_t err = dsps_fft2r_init_fc32(nullptr, numSamples);
+    if (err != ESP_OK)
+    {
+        Report.printf("FFT init failed: %d\n", err);
+        while (true)
+        {
+            delay(10);
+        }
+    }
+}
+
+// Goertzel state
+static float coeff, sine, cosine;
+
+// Initialize Goertzel for a target frequency
+void initGoertzel(float targetFreq)
+{
+    float normalized = 2.0f * M_PI * targetFreq / 600.0f; // normalize to sample rate
+    cosine = cosf(normalized);
+    sine = sinf(normalized);
+    coeff = 2.0f * cosine;
+}
+
+// run Goertzel on your buffer of raw ADC readings (convert to volts if you like)
+float goertzel()
+{
+    float Q0 = 0, Q1 = 0, Q2 = 0;
+    // process each sample
+    for (int i = 0; i < numSamples; i++)
+    {
+        // convert raw→voltage if desired:
+        // float x = (samples[i] & 0x0FFF) * (3.9f / 4095.0f);
+        float x = workspace[i];
+        Q0 = coeff * Q1 - Q2 + x;
+        Q2 = Q1;
+        Q1 = Q0;
+    }
+    // pull out real & imag parts
+    float real = Q1 - Q2 * cosine;
+    float imag = Q2 * sine;
+    // magnitude of the bin
+    float magnitude = sqrt(real * real + imag * imag);
+    // optional: scale by 2/N to get the peak amplitude of the sine wave
+    return (2.0 * magnitude) / numSamples;
+}
+
+float removeDCOffset()
+{
+    // remove DC offset for the given channel
+    for (int i = 0; i < numSamples; i++)
+        workspace[i] = multiplier * sample[i]; // copy samples to workspace float array
+
+    // remove DC offset
+    float m = 0;
+    for (int i = 0; i < numSamples; i++)
+        m += sample[i];
+    m /= (float)numSamples;
+    m *= multiplier;
+    for (int i = 0; i < numSamples; i++)
+        workspace[i] -= m;
+    return m;
+}
+
+static float fftBuf[2 * numSamples];
+
+DFTResult calcDFT(void)
+{
+    // 2) Build the interleaved complex array
+    for (int i = 0; i < numSamples; i++)
+    {
+        fftBuf[2 * i] = window[i] * workspace[i]; // real part
+        fftBuf[2 * i + 1] = 0.0f;                 // imag part
+    }
+
+    // 3) Run the radix-2 complex FFT
+    dsps_fft2r_fc32(fftBuf, numSamples);
+
+    // 4) Bit-reverse reorder
+    dsps_bit_rev_fc32(fftBuf, numSamples);
+
+    DFTResult result;
+    // 5) Compute magnitudes into result.dft[] array
+    for (int k = 0; k < numSamples / 2; k++)
+    {
+        float real = fftBuf[2 * k];
+        float imag = fftBuf[2 * k + 1];
+        result.dft[k] = 10.0f * log10f(real * real + imag * imag + 1e-12f);
+    }
+
+    result.maxValue = result.dft[0];
+    result.bestBin = 0;
+    result.bestFreq = 0.0f;
+
+    for (int i = (numSamples / 4) - 10; i < (numSamples / 4) + 10; i++)
+    {
+        if (result.maxValue < result.dft[i])
+        {
+            result.maxValue = result.dft[i];
+            result.bestBin = i;
+            result.bestFreq = i * (float)600 / (float)numSamples; // convert index to frequency
+        }
+    }
+    return result;
+}
+
+#endif

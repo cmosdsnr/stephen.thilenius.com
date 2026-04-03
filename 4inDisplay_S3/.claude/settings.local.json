@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command:*)",
+      "Bash(find C:UsersstephGitelectronic -name *.tsx -type f)"
+    ]
+  }
+}
