@@ -10,5 +10,6 @@
     "excludePrivate": true,
     "readme": "Readme.md",
     "includeVersion": true,
-    "useFirstParagraphOfCommentAsSummary": true
+    "useFirstParagraphOfCommentAsSummary": true,
+    "disableSources": true
   }

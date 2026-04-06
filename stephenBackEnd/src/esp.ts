@@ -51,6 +51,35 @@ type ESPlist = {
 /** Global registry of discovered ESP32 devices mapped by IP address */
 export const ESPlist: ESPlist = {};
 
+/** Remove devices not seen in the last 12 hours. */
+function removeStaleDevices(): void {
+  const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
+  for (const name of Object.keys(ESPlist)) {
+    if (name !== "Backend Server" && ESPlist[name].date < cutoff) {
+      delete ESPlist[name];
+    }
+  }
+}
+
+/**
+ * Register or update a device, enforcing uniqueness by both name and IP.
+ * Removes stale entries (>12h), evicts any existing entry sharing the same IP,
+ * then upserts the device keyed by name.
+ */
+function registerDevice(name: string, ip: string): void {
+  removeStaleDevices();
+
+  // Remove any existing entry whose IP matches (but has a different name)
+  for (const [existingName, entry] of Object.entries(ESPlist)) {
+    if (entry.ip === ip && existingName !== name) {
+      delete ESPlist[existingName];
+    }
+  }
+
+  ESPlist[name] = { date: new Date(), ip };
+  broadcast("ESPlist", { ...ESPlist[name], name });
+}
+
 //variable HOST_LAN_IP set in AtReboot cron job
 const hostIp = process.env.HOST_LAN_IP;
 console.log(`The server's Local IP is: ${hostIp}`);
@@ -75,6 +104,7 @@ let localNetworkPrefix = hostIp?.substring(0, hostIp.lastIndexOf(".")) || "192.1
  * ```
  */
 export async function ESPUpdate() {
+  removeStaleDevices();
   //reset time on backend server entry
   if (hostIp) {
     ESPlist["Backend Server"] = { date: new Date(), ip: hostIp };
@@ -126,8 +156,7 @@ function checkPort(i: number): Promise<number> {
           res.on("end", () => {
             if (data.includes("ESP")) {
               const currentIP = `${localNetworkPrefix}.${i}`;
-              ESPlist[data] = { date: new Date(), ip: currentIP };
-              broadcast("ESPlist", { ...ESPlist[data], name: data });
+              registerDevice(data, currentIP);
               if (data.toLowerCase().includes("sprinkler")) setSprinklerIP(currentIP);
               if (data.toLowerCase().includes("powermeter")) setMeterIP(currentIP);
               //   console.log(`${data} found at: ${currentIP}`);
@@ -219,8 +248,7 @@ export const espRoutes = (): express.Router => {
       .then((r) => r.text())
       .then((name) => {
         name = name.trim();
-        ESPlist[name] = { date: new Date(), ip };
-        broadcast("ESPlist", { ...ESPlist[name], name });
+        registerDevice(name, ip);
         if (name.toLowerCase().includes("sprinkler")) setSprinklerIP(ip);
         if (name.toLowerCase().includes("powermeter")) setMeterIP(ip);
         console.log(`ESP registered: ${name} at ${ip}`);
