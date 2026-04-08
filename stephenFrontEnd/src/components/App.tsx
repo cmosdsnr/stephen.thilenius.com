@@ -1,51 +1,58 @@
-import React, { useState, useEffect } from "react"
+import React, { Suspense, useEffect } from "react"
+import { QueryClient, QueryClientProvider } from 'react-query'
+import { Toaster } from 'react-hot-toast'
+import { ErrorBoundary } from './ErrorBoundary'
+
+const queryClient = new QueryClient()
 import { Container, Row, Col, Button } from "react-bootstrap"
 
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { DataProvider } from "../contexts/DataContext";
 import { WssProvider } from "../contexts/WssContext";
 import Modals, { ModalProvider } from '../modals/Modals';
 import ThNavbar from './Navigation/ThNavbar'
-import { PrivateRoute, PrivateVerifiedRoute, PrivateBorrowerRoute, PrivateAdminRoute } from './Navigation/PrivateRoute'
+import { PrivateRoute, PrivateVerifiedRoute, PrivateBorrowerRoute } from './Navigation/PrivateRoute'
 import { useData } from "../contexts/DataContext";
-
-import Dashboard from "./User/Dashboard"
-import UpdateProfile from './User/UpdateProfile'
-import PostDetail from './User/PostDetail'
-import CreatePost from './User/CreatePost'
-import Home from './Home'
-import Tree from './Tree'
-import Cv from './cv/Cv'
-import MessageBoard from "./Messages/MessageBoard";
-
-import Gallery from '../../Old_code/Gallery'
-import { Albums, Album, Picture } from './Gallery/Albums'
-import Recordings from './Recordings/Recordings'
-import Transcription from './Recordings/Transcription'
-
-// import { Administrator } from './Administrator/Administrator'
-import ESPtable from './Administrator/EspTable'
-import SolarEdge from './Administrator/SolarEdge'
-import PowerMeter from './Administrator/PowerMeter'
-import Davis from './Administrator/Davis'
-import Ultimeter from './Administrator/Ultimeter'
-import Sprinkler from './Administrator/Sprinklers/Sprinkler'
-import SophiesLoan from './Administrator/SophiesLoan'
-import Futures from './Administrator/Futures'
-import Documentation from './Administrator/Documentation'
-import FileShare from './User/FileShare'
-
-import Wordle from "./Games/Wordle/src/Wordle"
-import OldWordle from "./Games/OldWordle/OldWordle"
-import Blossom from "./Games/Blossom/Blossom"
-import Sandbox from "./Games/Wordle/src/Sandbox"
-import { Primes } from "./Games/Primes/Primes"
 
 import crest from "../images/crest_hi_res_small.gif"
 import name from "../images/ThileniusFamily.png"
 
 import Logout from "./Navigation/Logout"
 import { useWindow } from "../hooks/useWindow";
+
+// Route-level code splitting — each chunk is only downloaded when the user navigates to it
+const Dashboard    = React.lazy(() => import("./User/Dashboard"))
+const UpdateProfile= React.lazy(() => import('./User/UpdateProfile'))
+const PostDetail   = React.lazy(() => import('./User/PostDetail'))
+const CreatePost   = React.lazy(() => import('./User/CreatePost'))
+const Home         = React.lazy(() => import('./Home'))
+const Tree         = React.lazy(() => import('./Tree'))
+const Cv           = React.lazy(() => import('./cv/Cv'))
+const MessageBoard = React.lazy(() => import('./Messages/MessageBoard'))
+const FileShare    = React.lazy(() => import('./User/FileShare'))
+
+const Gallery      = React.lazy(() => import('../../Old_code/Gallery'))
+const Albums       = React.lazy(() => import('./Gallery/Albums').then(m => ({ default: m.Albums })))
+const Album        = React.lazy(() => import('./Gallery/Albums').then(m => ({ default: m.Album })))
+const Picture      = React.lazy(() => import('./Gallery/Albums').then(m => ({ default: m.Picture })))
+const Recordings   = React.lazy(() => import('./Recordings/Recordings'))
+const Transcription= React.lazy(() => import('./Recordings/Transcription'))
+
+const ESPtable     = React.lazy(() => import('./Administrator/EspTable'))
+const SolarEdge    = React.lazy(() => import('./Administrator/SolarEdge'))
+const PowerMeter   = React.lazy(() => import('./Administrator/PowerMeter'))
+const Davis        = React.lazy(() => import('./Administrator/Davis'))
+const Ultimeter    = React.lazy(() => import('./Administrator/Ultimeter'))
+const Sprinkler    = React.lazy(() => import('./Administrator/Sprinklers/Sprinkler'))
+const SophiesLoan  = React.lazy(() => import('./Administrator/SophiesLoan'))
+const Futures      = React.lazy(() => import('./Administrator/Futures'))
+const Documentation= React.lazy(() => import('./Administrator/Documentation'))
+
+const Wordle       = React.lazy(() => import('./Games/Wordle/src/Wordle'))
+const OldWordle    = React.lazy(() => import('./Games/OldWordle/OldWordle'))
+const Blossom      = React.lazy(() => import('./Games/Blossom/Blossom'))
+const Sandbox      = React.lazy(() => import('./Games/Wordle/src/Sandbox'))
+const Primes       = React.lazy(() => import('./Games/Primes/Primes').then(m => ({ default: m.Primes })))
 
 
 function Verify() {
@@ -101,6 +108,7 @@ function App() {
 
     return (
         // <AuthProvider>
+        <QueryClientProvider client={queryClient}>
         <WssProvider>
             <DataProvider>
                 <BrowserRouter>
@@ -124,6 +132,8 @@ function App() {
                             <ThNavbar />
                         </ModalProvider>
 
+                        <ErrorBoundary>
+                        <Suspense fallback={<div style={{ padding: "2rem" }}>Loading...</div>}>
                         <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/home" element={<Home />} />
@@ -183,11 +193,15 @@ function App() {
 
                             <Route path="/documentation/:selector" element={<PrivateRoute><Documentation /></PrivateRoute>} />
                         </Routes>
+                        </Suspense>
+                        </ErrorBoundary>
                     </Container>
                 </BrowserRouter>
             </DataProvider>
         </WssProvider>
-        // </AuthProvider>
+        <Toaster position="bottom-right" />
+        {/* </AuthProvider> */}
+        </QueryClientProvider>
     )
 }
 export default App;

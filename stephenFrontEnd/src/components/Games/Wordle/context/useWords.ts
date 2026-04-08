@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "react-query";
 import shortWordListFile from "../txt/words2309.txt";
 import longWordListFile from "../txt/words8916.txt";
 import optionWords from "../txt/words11435.txt";
@@ -26,13 +27,8 @@ export function useWords() {
   const [isWord, setIsWord] = useState<boolean>(true);
 
   /**
-   * Full word list used for evaluating guesses (from optionWords).
-   */
-  const [allWords, setAllWords] = useState<string[]>([]);
-
-  /**
    * Allowed solutions that can be selected as the target word.
-   * Initially uses the short list.
+   * Initially uses the short list (overridden by loadShortList/loadLongList).
    */
   const [allowedSolutions, setAllowedSolutions] = useState<string[]>([]);
 
@@ -41,29 +37,41 @@ export function useWords() {
    */
   const [letterCounts, setLetterCounts] = useState<LetterCounts>({} as LetterCounts);
 
-  // Load default word lists on component mount
-  useEffect(() => {
-    loadWords();
-  }, []);
+  // Load full guess list (allWords) via React Query; also drives calcLetterCounts
+  const { data: allWords = [], isLoading: allWordsLoading, error: allWordsError } = useQuery<string[]>(
+    ["wordle-allWords"],
+    async () => {
+      const x: string[] = [];
+      const s = await fetch(optionWords);
+      const t = await s.text();
+      t.split("\n").forEach((line) => line.split(" ").forEach((word) => x.push(word.toUpperCase())));
+      return x;
+    },
+    {
+      staleTime: Infinity,
+      onSuccess: (x) => {
+        calcLetterCounts(x);
+      },
+    }
+  );
 
-  /**
-   * Load default short list and full guess list, then calculate letter frequencies.
-   */
-  const loadWords = async () => {
-    const w: string[] = [];
-    const r = await fetch(shortWordListFile);
-    const text = await r.text();
-    text.split("\n").forEach((line) => line.split(" ").forEach((word) => w.push(word.toUpperCase())));
-    setAllowedSolutions(w);
-
-    const x: string[] = [];
-    const s = await fetch(optionWords);
-    const t = await s.text();
-    t.split("\n").forEach((line) => line.split(" ").forEach((word) => x.push(word.toUpperCase())));
-    setAllWords(x);
-
-    calcLetterCounts(x);
-  };
+  // Load short solution list (allowedSolutions default) via React Query
+  const { isLoading: shortListLoading, error: shortListError } = useQuery<string[]>(
+    ["wordle-shortList"],
+    async () => {
+      const w: string[] = [];
+      const r = await fetch(shortWordListFile);
+      const text = await r.text();
+      text.split("\n").forEach((line) => line.split(" ").forEach((word) => w.push(word.toUpperCase())));
+      return w;
+    },
+    {
+      staleTime: Infinity,
+      onSuccess: (w) => {
+        setAllowedSolutions(w);
+      },
+    }
+  );
 
   /**
    * Calculate letter counts and percentages from word list.
@@ -159,6 +167,9 @@ export function useWords() {
     return false;
   };
 
+  const isLoading = allWordsLoading || shortListLoading;
+  const error = allWordsError || shortListError;
+
   // Return state and utilities
-  return { allWords, allowedSolutions, letterCounts, isWord, checkWord, loadShortList, loadLongList };
+  return { allWords, allowedSolutions, letterCounts, isWord, isLoading, error, checkWord, loadShortList, loadLongList };
 }

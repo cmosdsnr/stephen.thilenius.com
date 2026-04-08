@@ -9,7 +9,7 @@ import React, { useEffect } from 'react'
 import { Button, Row, Col } from 'react-bootstrap'
 import { useWss } from '../../contexts/WssContext'
 import { AdminMenu } from './AdminMenu'
-import { serverURL } from '../../constants';
+import { API } from '../../api';
 
 /**
  * ESP32 device management component that displays a real-time table of network devices.
@@ -70,8 +70,7 @@ export default function EspTable(): JSX.Element {
      * ```
      */
     const handleRefresh = (): void => {
-        const url = new URL('/api/ESPupdate', serverURL);
-        fetch(url.toString())
+        fetch(API.ESPupdate())
             .then(response => response.text())
             .then(data => console.log('Rescan response:', data))
             .catch(error => console.error('Rescan failed:', error));

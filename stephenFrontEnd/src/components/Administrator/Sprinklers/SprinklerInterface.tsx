@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQuery } from 'react-query';
+import toast from 'react-hot-toast';
 import { Codes, itemNames, dataPoint, NUM_CHANNELS, NUM_DAYS, SendSocketCodes } from './constants';
 import { useWss } from '../../../contexts/WssContext';
-import { serverURL } from '../../../constants'
+import { API } from '../../../api'
 import { useInterval } from '../../../hooks/useInterval';
 
 /**
@@ -142,8 +144,7 @@ async function sleepSeconds(seconds: number) {
  */
 // see if sprinkler wss is connected
 async function checkConnection() {
-    const url = new URL('/api/sprinkler/isConnected', serverURL);
-    const response = await fetch(url.toString());
+    const response = await fetch(API.sprinklerIsConnected());
     const data = await response.json();
     return (data.connected != -1);
 }
@@ -153,8 +154,7 @@ async function checkConnection() {
  * @returns A promise that resolves to the status of the ESP.
  */
 async function checkESP() {
-    const url = new URL('/api/sprinkler/found', serverURL);
-    const response = await fetch(url.toString());
+    const response = await fetch(API.sprinklerFound());
     const data = await response.json();
     return data.status;
 }
@@ -212,39 +212,39 @@ export const SprinklerInterface = () => {
 
 
     /**
-     * Fetches the initial sprinkler data from the server.
-     * Updates all local state variables with the received configuration,
+     * Fetches the initial sprinkler data from the server via React Query.
+     * Enabled only once the sprinkler WebSocket connection is established.
+     * Updates all local state variables via onSuccess with the received configuration,
      * including variables, channel data, suspensions, global settings, and next watering times.
      */
-    const fetchSprinklerData = () => {
-        const url = new URL('/api/sprinkler/load', serverURL);
-        fetch(url.toString())
-            .then(response => response.json())
-            .then(data => {
-                if (data.error)
-                    console.log(data.error);
-                else {
-                    console.log('sprinkler data fetched:' + JSON.stringify(data));
-                    setSprinklerDataLoaded(true);
-                    setVariables(data.variables);
-                    setNumberOfChannels(NUM_CHANNELS);
-                    setNumberOfDays(NUM_DAYS);
-                    setName(data.name);
-                    setManual(-1);
-                    setChannelActive(data.runningChannel ?? -1);
-                    setRules(deriveRulesFromSchedule(data.schedule ?? []));
-                }
-            });
-    };
-
-    /**
-     * Effect to reload data when the sprinkler connection is established.
-     */
-    useEffect(() => {
-        if (sprinklerConnected) {
-            fetchSprinklerData();
+    useQuery(
+        ['sprinkler', 'load'],
+        async () => {
+            const response = await fetch(API.sprinklerLoad());
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data;
+        },
+        {
+            enabled: sprinklerConnected,
+            refetchOnWindowFocus: false,
+            onSuccess: (data) => {
+                console.log('sprinkler data fetched:' + JSON.stringify(data));
+                setSprinklerDataLoaded(true);
+                setVariables(data.variables);
+                setNumberOfChannels(NUM_CHANNELS);
+                setNumberOfDays(NUM_DAYS);
+                setName(data.name);
+                setManual(-1);
+                setChannelActive(data.runningChannel ?? -1);
+                setRules(deriveRulesFromSchedule(data.schedule ?? []));
+            },
+            onError: (err) => {
+                console.error('sprinkler load error:', err);
+                toast.error('Failed to load sprinkler data');
+            },
         }
-    }, [sprinklerConnected]);
+    );
 
     /**
      * Effect to initialize data and subscribe to sprinkler messages on mount.

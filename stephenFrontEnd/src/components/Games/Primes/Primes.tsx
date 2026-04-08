@@ -4,7 +4,7 @@ import Worker from './worker.ts?worker';
 import { JsonFileLoader } from './JsonFileLoader';
 import { top } from '@popperjs/core';
 import { set } from 'lodash';
-import './primes.css';
+import styles from './primes.module.css';
 
 export const Primes = () => {
     const [primes, setPrimes] = useState<number[][]>([[2, 0], [5, 0], [7, 6], [11, 2], [13, 6], [17, 16], [19, 18], [23, 22], [29, 28], [31, 30], [37, 36], [41, 40], [43, 42], [47, 46], [53, 52], [59, 58], [61, 60]]);
@@ -296,14 +296,14 @@ export const Primes = () => {
         const maxRows = Math.max(...columnChunks.map(col => col.length));
 
         return (
-            <table border={1} cellPadding={4} cellSpacing={0} style={{ marginTop: '20px', marginBottom: '20px' }}>
+            <table border={1} cellPadding={4} cellSpacing={0} className={styles.primesTable}>
                 <thead>
                     <tr>
                         {[...Array(6)].map((_, i) => (
                             <React.Fragment key={i}>
-                                <th className="group-header">Prime</th>
-                                <th className="group-header">Period</th>
-                                <th className="group-header group-separator">(p−1)/period</th>
+                                <th className={styles.groupHeader}>Prime</th>
+                                <th className={styles.groupHeader}>Period</th>
+                                <th className={`${styles.groupHeader} ${styles.groupSeparator}`}>(p−1)/period</th>
                             </React.Fragment>
                         ))}
                     </tr>
@@ -318,9 +318,9 @@ export const Primes = () => {
                                     const ratio = period > 0 ? ((prime - 1) / period).toString() : '';
                                     return (
                                         <React.Fragment key={colIndex}>
-                                            <td className="prime-cell">{prime.toLocaleString()}</td>
-                                            <td className="period-cell">{period.toLocaleString()}</td>
-                                            <td className="ratio-cell">{ratio.toLocaleString()}</td>
+                                            <td className={styles.primeCell}>{prime.toLocaleString()}</td>
+                                            <td className={styles.periodCell}>{period.toLocaleString()}</td>
+                                            <td className={styles.ratioCell}>{ratio.toLocaleString()}</td>
                                         </React.Fragment>
                                     );
                                 } else {

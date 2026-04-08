@@ -6,17 +6,15 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { Row, Col } from 'react-bootstrap'
-import { Chart, AxisOptions } from "react-charts";
+import { useQuery } from 'react-query';
+import { Row, Col, Spinner, Alert } from 'react-bootstrap'
 import { useWss } from '../../contexts/WssContext';
-import { useData } from '../../contexts/DataContext'
-import { serverURL } from '../../constants';
+import { API } from '../../api';
 import { AdminMenu } from './AdminMenu';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import './admin.css';
 import _ from 'lodash';
-import { AgCharts } from 'ag-charts-react'; // old charts
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -35,6 +33,8 @@ import {
 import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-adapter-date-fns';
 import { preventOverflow } from '@popperjs/core';
+import { chartTeal } from '../../tokens';
+import solarStyles from './SolarEdge.module.css';
 
 /**
  * Represents SunSpec common model information from the solar inverter.
@@ -136,17 +136,11 @@ const marks = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 
  * - Supports both relative (last N days) and absolute (from specific date) ranges
  */
 export default function SolarEdge() {
-    /** Array of solar power data points for chart visualization */
-    const [solarEdgeData, setSolarEdgeData] = useState<SolarPoint[]>([]);
-
     /** Timestamp of the most recent data update */
     const [lastSolarEdgeUpdate, setLastSolarEdgeUpdate] = useState<Date>(new Date());
 
     /** Current selected date range with calculated duration */
     const [range, setRange] = useState<DateRange>({ from: new Date(), to: new Date(), days: 0, hrs: 0 });
-
-    /** SunSpec device information from the inverter */
-    const [info, setInfo] = useState<SunSpecCommonInfo | null>(null);
 
     /** Number of days to display (1-10), persisted in localStorage */
     const [numDays, setNumDays] = useState<number>(
@@ -163,8 +157,70 @@ export default function SolarEdge() {
     /** Whether to use custom start date mode, persisted in localStorage */
     const [useStartDate, setUseStartDate] = useState<boolean>(localStorage.getItem('useStartDate') == "true");
 
+    /**
+     * Range params state drives the range query key so React Query re-fetches
+     * whenever the user selects a different date range.
+     */
+    const [rangeParams, setRangeParams] = useState<{ from: Date; to: Date }>(() => {
+        const now = new Date();
+        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0), to: now };
+    });
+
     /** WebSocket context for live solar data updates */
     const { solarEdgeUpdate, subscribe, unsubscribe, isReady } = useWss();
+
+    /**
+     * React Query hook to fetch solar power data for the selected date range.
+     * Re-fetches automatically when rangeParams changes.
+     */
+    const { data: rangeResult, isLoading: rangeLoading, error: rangeError } = useQuery(
+        ['solarEdgeRange', rangeParams.from.toISOString(), rangeParams.to.toISOString()],
+        async () => {
+            console.log("loadRange", rangeParams.from, "to", rangeParams.to);
+            const response = await fetch(API.solarEdgeRange(rangeParams.from, rangeParams.to));
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const res = await response.json();
+            console.log(res);
+            console.log("received", res.data.length / 240.0, "hours of data");
+            let start = 3600000 * res.fromHour;
+            const data: SolarPoint[] = [];
+            res.data.forEach((dp: any) => {
+                data.push({ timestamp: start, power: dp / 1000 });
+                start += 15000;
+            });
+            const f = new Date(start);
+            const t = new Date(start + 15000 * res.data.length);
+            const days = Math.floor((t.getTime() - f.getTime()) / (24 * 3600 * 1000));
+            const hrs = Math.floor((t.getTime() - f.getTime()) / (3600 * 1000)) - 24 * days;
+            return { solarEdgeData: data, range: { from: rangeParams.from, to: rangeParams.to, days, hrs } };
+        },
+        {
+            keepPreviousData: true,
+            onSuccess: () => setLastSolarEdgeUpdate(new Date()),
+        }
+    );
+
+    const solarEdgeData: SolarPoint[] = rangeResult?.solarEdgeData ?? [];
+
+    /**
+     * React Query hook to fetch SunSpec device information (once on mount).
+     */
+    const { data: info } = useQuery<SunSpecCommonInfo>(
+        ['solarEdgeUnitInfo'],
+        async () => {
+            const response = await fetch(API.solarEdgeUnitInfo());
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json() as Promise<SunSpecCommonInfo>;
+        }
+    );
+
+    /**
+     * Helper to trigger a new range fetch by updating rangeParams state.
+     */
+    const loadRange = (from: Date, to: Date) => {
+        setRangeParams({ from, to });
+        setRange(prev => ({ ...prev, from, to }));
+    };
 
     /**
      * Effect hook to handle WebSocket reconnection and data reload.
@@ -188,14 +244,12 @@ export default function SolarEdge() {
 
     /**
      * Effect hook for component initialization.
-     * Sets up initial data load, device info fetch, and WebSocket subscription.
+     * Sets up initial data load and WebSocket subscription.
      */
     useEffect(() => {
         const now = new Date();
         const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0);
         setSelectedDate(from);
-        loadRange(from, now);
-        loadInfo();
         setNumDays(2);
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         console.log(timeZone);
@@ -207,77 +261,25 @@ export default function SolarEdge() {
         };
     }, []);
 
+    /** Live data points appended by WebSocket updates since the last range load */
+    const [livePoints, setLivePoints] = useState<SolarPoint[]>([]);
+
     /**
      * Effect hook to handle real-time solar data updates via WebSocket.
-     * Appends new data points to the existing dataset when not ignoring updates.
+     * Appends new data points to the live buffer when not ignoring updates.
      */
     useEffect(() => {
         if (!ignoreUpdates && solarEdgeUpdate) {
             // console.log("solarEdgeUpdate:", solarEdgeUpdate);
-            setSolarEdgeData(prevData => [...prevData, { timestamp: 1000 * solarEdgeUpdate[1], power: solarEdgeUpdate[0] / 1000 }]);
+            setLivePoints(prev => [...prev, { timestamp: 1000 * solarEdgeUpdate[1], power: solarEdgeUpdate[0] / 1000 }]);
             setLastSolarEdgeUpdate(new Date());
         }
     }, [solarEdgeUpdate]);
 
-    /**
-     * Loads solar power data for a specified date range from the API.
-     * Converts raw power values from watts to kilowatts and processes timestamps.
-     * 
-     * @param from - Start date for data range
-     * @param to - End date for data range
-     * 
-     * @example
-     * ```tsx
-     * const now = new Date();
-     * const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-     * loadRange(yesterday, now);
-     * // Loads 24 hours of solar data
-     * ```
-     */
-    const loadRange = (from: Date, to: Date) => {
-        console.log("loadRange", from, "to", to);
-        const url = new URL('/api/solarEdge/Range', serverURL);
-        url.searchParams.set('from', from.toISOString());
-        url.searchParams.set('to', to.toISOString());
-        fetch(url.toString())
-            .then(response => response.json())
-            .then(res => {
-                console.log(res);
-                console.log("received", res.data.length / 240.0, "hours of data");
-                let start = 3600000 * res.fromHour;
-                let data: any[] = [];
-                res.data.forEach((dp: any) => {
-                    data.push({ timestamp: start, power: dp / 1000 });
-                    start += 15000;
-                });
-                setSolarEdgeData(data);
-                let f = new Date(start);
-                let t = new Date(start + 15000 * res.data.length);
-                const days = Math.floor((t.getTime() - f.getTime()) / (24 * 3600 * 1000));
-                const hrs = Math.floor((t.getTime() - f.getTime()) / (3600 * 1000)) - 24 * days;
-                setRange({ from, to, days, hrs });
-                setLastSolarEdgeUpdate(new Date());
-            });
-    };
-
-    /**
-     * Loads SunSpec device information from the solar inverter.
-     * Retrieves manufacturer, model, version, and other device details.
-     * 
-     * @example
-     * ```tsx
-     * loadInfo();
-     * // Fetches and displays inverter device information
-     * ```
-     */
-    const loadInfo = () => {
-        const url = new URL('/api/solarEdge/UnitInfo', serverURL);
-        fetch(url.toString())
-            .then(response => response.json())
-            .then(res => {
-                setInfo(res);
-            });
-    };
+    /** Reset live points whenever a new range is fetched */
+    useEffect(() => {
+        setLivePoints([]);
+    }, [rangeParams]);
 
     /**
      * Selects a relative date range based on number of days from current time.
@@ -297,15 +299,18 @@ export default function SolarEdge() {
         loadRange(from, now);
     };
 
+    /** Merged data: historical from query + live WebSocket points */
+    const displayData: SolarPoint[] = [...solarEdgeData, ...livePoints];
+
     /** Chart.js data configuration for solar power visualization */
     const chartData = {
-        labels: solarEdgeData.map(dp => new Date(dp.timestamp)),
+        labels: displayData.map(dp => new Date(dp.timestamp)),
         datasets: [
             {
                 label: 'Speed',
-                data: solarEdgeData.map(dp => dp.power),
-                borderColor: 'rgba(75,192,192,1)',
-                backgroundColor: 'rgba(75,192,192,0.2)',
+                data: displayData.map(dp => dp.power),
+                borderColor: chartTeal.solid,
+                backgroundColor: chartTeal.fill,
                 fill: false,
                 pointRadius: 0, // Hide point markers
             },
@@ -445,21 +450,23 @@ export default function SolarEdge() {
         }
     };
 
-    if (solarEdgeData.length === 0)
-        return <div><AdminMenu span={4} offset={8} />Loading...</div>;
-    else {
+    if (rangeLoading)
+        return <div><AdminMenu span={4} offset={8} /><Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner></div>;
+    if (rangeError)
+        return <div><AdminMenu span={4} offset={8} /><Alert variant="danger">Error: {(rangeError as Error).message}</Alert></div>;
+    {
         return (
             <div>
                 <AdminMenu span={4} offset={8} />
                 <h1>SolarEdge</h1>
-                <p style={{ textAlign: "center" }}>last Update: {lastSolarEdgeUpdate.toLocaleString()}</p>
+                <p className={solarStyles.lastUpdate}>last Update: {lastSolarEdgeUpdate.toLocaleString()}</p>
 
-                <Row style={{ border: "1px solid black", marginBottom: "10px", backgroundColor: 'white', padding: '20px' }}>
+                <Row className={solarStyles.chartRow}>
                     <Line data={chartData} options={options as any} />
                 </Row>
-                <Row style={{ border: "1px solid black", marginBottom: "10px" }}>
-                    <Col xs={3} style={{ margin: '15px' }}>Number of Days (1-10) : {numDays} </Col>
-                    <Col xs={7} style={{ backgroundColor: 'white', padding: '20px', paddingLeft: '40px', paddingBottom: '30px' }}>
+                <Row className={solarStyles.controlsRow}>
+                    <Col xs={3} className={solarStyles.daysCol}>Number of Days (1-10) : {numDays} </Col>
+                    <Col xs={7} className={solarStyles.sliderCol}>
                         <Slider
                             min={1}
                             max={10}
@@ -469,7 +476,7 @@ export default function SolarEdge() {
                         />
                     </Col>
                 </Row>
-                <Row style={{ border: "1px solid black", marginBottom: "10px" }}>
+                <Row className={solarStyles.dateRow}>
                     <Col xs={2}>
                         <input type="checkbox" checked={useStartDate} onChange={(e) => handleUseStartDate(e)} /> Use startDate
                     </Col>
@@ -486,39 +493,39 @@ export default function SolarEdge() {
                         <p>Selected range: {range.from.toLocaleString()} to {range.to.toLocaleString()} ( {range.days} days, {range.hrs} hrs) </p>
                     </Col>
                 </Row>
-                <Row style={{ border: "1px solid black", marginBottom: "100px" }}>
+                <Row className={solarStyles.unitInfoRow}>
                     <Col xs={12}>
                         {info && (
                             <div>
                                 <h3>Unit Info</h3>
-                                <table style={{ borderCollapse: 'collapse', width: '300px', backgroundColor: 'white', padding: '20px' }}>
+                                <table className={solarStyles.unitInfoTable}>
                                     <tbody>
                                         <tr>
-                                            <td style={{ fontWeight: 'bold' }}>Signature</td>
+                                            <td className={solarStyles.unitInfoLabel}>Signature</td>
                                             <td style={{}}>{info.signature}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Model ID</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Model ID</td>
                                             <td style={{}}>{info.modelId}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Block Length</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Block Length</td>
                                             <td style={{}}>{info.blockLength}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Manufacturer</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Manufacturer</td>
                                             <td style={{}}>{info.manufacturer}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Model</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Model</td>
                                             <td style={{}}>{info.model}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Version</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Version</td>
                                             <td style={{}}>{info.version}</td>
                                         </tr>
-                                        <tr style={{ border: '1px solid black' }}>
-                                            <td style={{ fontWeight: 'bold' }}>Serial</td>
+                                        <tr>
+                                            <td className={solarStyles.unitInfoLabel}>Serial</td>
                                             <td style={{}}>{info.serial}</td>
                                         </tr>
                                     </tbody>

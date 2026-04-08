@@ -1,0 +1,329 @@
+.ignoreCss { all: unset; }
+
+.buttonSend {
+    width: 100%;
+    display: inline-block;
+    padding: 5px 55px;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+    color: #fff;
+    background-color: #337ab7;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 2px 2px #999;
+}
+
+.buttonSend:hover {
+    background-color: #2e6da4;
+}
+
+.buttonSend:active {
+    background-color: #337ab7;
+    box-shadow: 1px 1px #666;
+    transform: translateY(4px);
+}
+
+.buttonSend:disabled {
+    background-color: #9c9c9c;
+    box-shadow: 1px 1px #666;
+    transform: translateY(4px);
+}
+
+.container {
+    padding-top: 80px;
+    display: flex;
+    justify-content: center;
+}
+
+.formContainer {
+    min-width: 380px;
+}
+
+.progress {
+    width: 100%;
+    height: 8px;
+    background: #e1e4e8;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress .progressBar {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #ffd33d, #ea4aaa 17%, #b34bff 34%, #01feff 51%, #ffd33d 68%, #ea4aaa 85%, #b34bff);
+    background-size: 300% 100%;
+    -webkit-animation: progress-animation 2s linear infinite;
+    animation: progress-animation 2s linear infinite;
+}
+
+.inputFile {
+    width: 100%;
+    border: 0px transparent;
+    padding: 4px 4px 4px 4px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-radius: 7px;
+    background-color: rgba(51, 122, 183, 0.3);
+}
+
+.additionalInfo {
+    height: 67px;
+}
+
+@-webkit-keyframes progress-animation {
+    0%   { background-position: 100%; }
+    100% { background-position: 0; }
+}
+
+@keyframes progress-animation {
+    0%   { background-position: 100%; }
+    100% { background-position: 0; }
+}
+
+.tileContainer {
+    margin-left: -5vw;
+    display: flex;
+    justify-content: center;
+}
+
+.channels {
+    font-size: 14px;
+    margin: 0 10px;
+}
+
+.channels table {
+    margin-bottom: 10px;
+}
+
+.channels td,
+.channels th {
+    border: 1px solid black;
+    min-width: 70px;
+    padding: 5px;
+}
+
+.channels input[type=checkbox] {
+    margin: 0px 10px;
+}
+
+.suspends {
+    text-align: center;
+}
+
+.globalTable {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.toggleSwitch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggleSwitch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggleSlider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #cc0000;
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.toggleSlider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.toggleSwitch input:checked + .toggleSlider {
+    background-color: #22aa00;
+}
+
+.toggleSwitch input:checked + .toggleSlider::before {
+    transform: translateX(20px);
+}
+
+.startTimePicker {
+    background-color: rgb(200, 230, 255);
+}
+
+.dashBorder {
+    border: 3px dotted blue !important;
+}
+
+.blinkBg {
+    color: #fff;
+    animation: blinkingBackground 2s infinite;
+}
+
+@keyframes blinkingBackground {
+    0%   { background-color: #20ff30; }
+    25%  { background-color: #85b2ff; }
+    50%  { background-color: #ff7a83; }
+    75%  { background-color: #afc9fe; }
+    100% { background-color: #1ab8ff; }
+}
+
+.blinkRed {
+    color: #fff;
+    animation: blinkingRed 0.8s infinite;
+}
+
+@keyframes blinkingRed {
+    0%   { background-color: #cc0000; }
+    50%  { background-color: #ff6666; }
+    100% { background-color: #cc0000; }
+}
+
+.circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    line-height: 20px;
+    vertical-align: middle;
+    text-align: center;
+    color: white;
+    margin: auto;
+}
+
+.redCircle {
+    background: red;
+}
+
+.greenCircle {
+    background: green;
+}
+
+/* ── Static layout helpers extracted from inline styles ── */
+
+.rowHeaderEdit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.smallInput {
+    width: 35px;
+}
+
+.allButton {
+    margin-left: 4px;
+    font-size: 9px;
+    padding: 1px 3px;
+    cursor: pointer;
+}
+
+.paddedBottom {
+    padding-bottom: 100px;
+}
+
+.rulesSection {
+    margin-top: 30px;
+}
+
+.rulesSectionHeader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.headingNoMargin {
+    margin: 0;
+}
+
+.rulesTable {
+    margin-top: 10px;
+    width: calc(100% - 20px);
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.calendarSection {
+    margin-top: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.calendarTable {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.calendarDateLabel {
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.durationInput {
+    width: 65px;
+}
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modalSection {
+    margin-bottom: 15px;
+}
+
+.startTimeRow {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.modalActionButtons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.deleteButton {
+    background-color: red;
+    color: white;
+}

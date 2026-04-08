@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -16,7 +17,9 @@ import 'chartjs-adapter-date-fns';
 import { useWss } from '../../contexts/WssContext';
 import { AdminMenu } from './AdminMenu';
 import { useInterval } from '../../hooks/useInterval';
-import { serverURL } from '../../constants';
+import { API } from '../../api';
+import { SkeletonChart } from '../Skeleton';
+import { chartTeal, chartRed } from '../../tokens';
 
 // Register Chart.js components and the zoom plugin
 ChartJS.register(
@@ -32,7 +35,6 @@ ChartJS.register(
 );
 
 const Ultimeter = () => {
-    const [ultimeterData, setUltimeterData] = useState<WindPoint[]>([]);
     const [tooLong, setTooLong] = useState<boolean>(false);
     const [lastSeen, setLastSeen] = useState<string>("");
     const [date, setDate] = useState<number>(Math.floor(new Date().getTime() / 1000));
@@ -43,21 +45,59 @@ const Ultimeter = () => {
         unsubscribe
     } = useWss();
 
+    /** Range params state drives the query key so React Query re-fetches on range change */
+    const [rangeParams, setRangeParams] = useState<{ from: Date; to: Date }>(() => {
+        const now = new Date();
+        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() - 13, 0, 0, 0), to: now };
+    });
+
+    /**
+     * React Query hook to fetch historical ultimeter wind data.
+     * Re-fetches automatically when rangeParams changes.
+     */
+    const { data: queryData, isLoading, error } = useQuery<WindPoint[]>(
+        ['ultimeterRange', rangeParams.from.toISOString(), rangeParams.to.toISOString()],
+        async () => {
+            console.log("loadRange", rangeParams.from, "to", rangeParams.to);
+            const response = await fetch(API.ultimeterRange(rangeParams.from, rangeParams.to));
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const res = await response.json();
+            console.log(res);
+            console.log("received", res.data.length / 240.0, "hours of data");
+            let start = 3600000 * res.fromHour;
+            const data: WindPoint[] = [];
+            res.data.forEach((dp: any) => {
+                data.push({ timestamp: start, speed: dp[0], direction: dp[1] });
+                start += 15000;
+            });
+            return data;
+        },
+        { keepPreviousData: true }
+    );
+
+    const historicalData: WindPoint[] = queryData ?? [];
+
+    /** Live data points appended by WebSocket updates since the last range load */
+    const [livePoints, setLivePoints] = useState<WindPoint[]>([]);
+
     useInterval(function () {
         setDate(Math.floor(new Date().getTime() / 1000));
     }, 1000)
 
     useEffect(() => {
-        const now = new Date();
-        loadRange(new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() - 13, 0, 0, 0), now);
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         console.log(timeZone);
-        console.log((new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() - 13, 0, 0, 0)).toLocaleString());
+        console.log(rangeParams.from.toLocaleString());
         subscribe("ultimeter");
         return () => {
             unsubscribe("ultimeter");
         };
     }, []);
+
+    /** Reset live points whenever a new range is fetched */
+    useEffect(() => {
+        setLivePoints([]);
+    }, [rangeParams]);
 
     useEffect(() => {
         if (ultimeterLastUpdate > 0) {
@@ -79,36 +119,19 @@ const Ultimeter = () => {
     useEffect(() => {
         if (ultimeterUpdate) {
             console.log("ultimeterUpdate:", ultimeterUpdate);
-            setUltimeterData(prevData => [...prevData, { timestamp: 1000 * ultimeterUpdate[2], speed: ultimeterUpdate[0], direction: ultimeterUpdate[1] }]);
+            setLivePoints(prevData => [...prevData, { timestamp: 1000 * ultimeterUpdate[2], speed: ultimeterUpdate[0], direction: ultimeterUpdate[1] }]);
         }
     }, [ultimeterUpdate]);
 
-    const loadRange = (from: Date, to: Date) => {
-        console.log("loadRange", from, "to", to);
-        // if (ultimeterData.length > 0) return;
-        const url = new URL('/api/ultimeterRange', serverURL);
-        url.searchParams.set('from', from.toISOString());
-        url.searchParams.set('to', to.toISOString());
-        fetch(url.toString())
-            .then(response => response.json())
-            .then(res => {
-                console.log(res);
-                console.log("received", res.data.length / 240.0, "hours of data");
-                let start = 3600000 * res.fromHour;
-                let data: WindPoint[] = [];
-                res.data.forEach((dp: any) => {
-                    data.push({ timestamp: start, speed: dp[0], direction: dp[1] });
-                    start += 15000;
-                });
-                setUltimeterData(data);
-            });
-    };
-
+    /** Selects a relative date range based on number of days from current time */
     const selectRange = (days: number) => {
         const now = new Date();
         const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        loadRange(from, now);
+        setRangeParams({ from, to: now });
     };
+
+    /** Merged data: historical from query + live WebSocket points */
+    const ultimeterData: WindPoint[] = [...historicalData, ...livePoints];
 
     const chartDataSpeed = {
         labels: ultimeterData.map(dp => new Date(dp.timestamp)),
@@ -116,8 +139,8 @@ const Ultimeter = () => {
             {
                 label: 'Speed',
                 data: ultimeterData.map(dp => dp.speed),
-                borderColor: 'rgba(75,192,192,1)',
-                backgroundColor: 'rgba(75,192,192,0.2)',
+                borderColor: chartTeal.solid,
+                backgroundColor: chartTeal.fill,
                 fill: false,
             },
         ],
@@ -129,8 +152,8 @@ const Ultimeter = () => {
             {
                 label: 'Direction',
                 data: ultimeterData.map(dp => dp.direction),
-                borderColor: 'rgba(192,75,75,1)',
-                backgroundColor: 'rgba(192,75,75,0.2)',
+                borderColor: chartRed.solid,
+                backgroundColor: chartRed.fill,
                 fill: false,
             },
         ],
@@ -174,6 +197,8 @@ const Ultimeter = () => {
                 <button onClick={() => selectRange(4)}>Past 4 Days</button>
                 <button onClick={() => selectRange(7)}>Past 7 Days</button>
             </div>
+            {isLoading && <SkeletonChart height={280} />}
+            {error && <p style={{ color: 'red' }}>Error: {(error as Error).message}</p>}
             <Line data={chartDataSpeed} options={options as any} />
             <Line data={chartDataDirection} options={options as any} />
         </div>

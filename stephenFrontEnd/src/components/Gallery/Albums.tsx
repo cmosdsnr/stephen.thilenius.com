@@ -3,14 +3,16 @@
  * Supports regular albums, special albums (admin-only), and numbered photo boxes with image rotation functionality.
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useQuery } from 'react-query'
 import { Row, Col, Button, Form } from 'react-bootstrap'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import back from '../../images/back.png'
-import { serverURL } from '../../constants'
+import { API } from '../../api'
 import { useData } from '../../contexts/DataContext'
+import { SkeletonGrid, SkeletonImage } from '../Skeleton'
+import styles from './gallery.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight, faRotateLeft, faRotateRight } from '@fortawesome/free-solid-svg-icons'
-import './gallery.css'
 
 // Use a fallback for the gallery base URL, useful for local development.
 const GALLERY_BASE = (import.meta as any).env?.VITE_GALLERY_BASE || '';
@@ -37,15 +39,6 @@ export function Albums(): JSX.Element {
     /** Current viewing mode - 'album' for photo albums, 'box' for numbered photo boxes */
     const [mode, setMode] = useState<Mode>((localStorage.getItem('AlbumMode') || 'album') as Mode);
 
-    /** List of regular photo albums available to the user */
-    const [albums, setAlbums] = useState<string[]>([]);
-
-    /** List of special/admin-only albums available to administrators */
-    const [specialAlbums, setSpecialAlbums] = useState<string[]>([]);
-
-    /** List of numbered photo boxes available to the user */
-    const [boxes, setBoxes] = useState<string[]>([]);
-
     /** Rotation values for cover images - maps item name to quarter-turns (0-3) */
     const [rotation, setRotation] = useState<Record<string, number>>({});
 
@@ -55,43 +48,29 @@ export function Albums(): JSX.Element {
      * Fetch directory listings based on current mode
      * Loads albums, special albums, or boxes from the server with authentication
      */
-    useEffect(() => {
-        const controller = new AbortController();
-        const fetchList = async () => {
-            try {
-                const url = new URL(`/api/readDirectories/${mode}`, serverURL);
-                const res = await fetch(url.toString(), {
-                    headers: { Authorization: `Bearer ${pb.authStore.token}` },
-                    signal: controller.signal,
-                });
-                const json = await res.json();
-
-                if (json.error) {
-                    console.error(`${mode} fetch error:`, json.error);
-                    return;
-                }
-
-                // Reset everything then set based on mode
-                setRotation((json.rotation ?? {}) as Record<string, number>);
-                if (mode === 'album') {
-                    setAlbums(json.files ?? []);
-                    setSpecialAlbums(json.special ?? []);
-                    setBoxes([]); // clear boxes list
-                } else {
-                    setBoxes(json.files ?? []);
-                    setAlbums([]);
-                    setSpecialAlbums([]);
-                }
-            } catch (err) {
-                if ((err as any)?.name !== 'AbortError') {
-                    console.error(`Failed to fetch ${mode} list:`, err);
-                }
+    const { data: dirData, isLoading: dirLoading, error: dirError } = useQuery(
+        ['readDirectories', mode, pb.authStore.token],
+        async () => {
+            const res = await fetch(API.readDirectories(mode), {
+                headers: { Authorization: `Bearer ${pb.authStore.token}` },
+            });
+            const json = await res.json();
+            if (json.error) {
+                throw new Error(`${mode} fetch error: ${json.error}`);
             }
-        };
+            return json;
+        },
+        {
+            onSuccess: (json: any) => {
+                setRotation((json.rotation ?? {}) as Record<string, number>);
+            },
+        }
+    );
 
-        fetchList();
-        return () => controller.abort();
-    }, [mode, pb.authStore.token]);
+    // Derive list state from query data based on current mode
+    const albums: string[] = (dirData && mode === 'album') ? (dirData.files ?? []) : [];
+    const specialAlbums: string[] = (dirData && mode === 'album') ? (dirData.special ?? []) : [];
+    const boxes: string[] = (dirData && mode === 'box') ? (dirData.files ?? []) : [];
 
     /**
      * Handle right-click rotation for cover images
@@ -112,10 +91,13 @@ export function Albums(): JSX.Element {
         });
     };
 
+    if (dirLoading) return <SkeletonGrid count={8} />;
+    if (dirError) return <p>Error loading {mode}s: {(dirError as Error).message}</p>;
+
     return (
         <>
             {/* Toggle between Albums and Boxes */}
-            <Row className="mb-3" style={{ marginTop: '20px' }}>
+            <Row className={`mb-3 ${styles.albumsRow}`}>
                 <Col xs={4} className="text-center mb-2">
                     <h2>{mode === 'album' ? 'Albums' : 'Boxes'}</h2>
                 </Col>
@@ -224,9 +206,6 @@ export function Albums(): JSX.Element {
 export function Album(): JSX.Element {
     const { name, special } = useParams<{ name: string, special?: string }>()
 
-    /** List of image filenames in the current album/box */
-    const [images, setImages] = useState<string[]>([])
-
     /** Rotation values for images - maps filename to quarter-turns (0-3) */
     const [rotation, setRotation] = useState<{ [key: string]: number }>({})
 
@@ -261,8 +240,7 @@ export function Album(): JSX.Element {
     const saveRotation = useCallback(async () => {
         if (!name) return;
         try {
-            const url = new URL(`/api/rotation/${encodeURIComponent(name)}/${isSpecial ? 'special' : isBoxes ? 'box' : 'album'}`, serverURL);
-            await fetch(url.toString(), {
+            await fetch(API.rotation(name, isSpecial ? 'special' : isBoxes ? 'box' : 'album'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rotation: rotationRef.current }),
@@ -305,17 +283,25 @@ export function Album(): JSX.Element {
      * Load images and rotation data for the current album/box
      * Fetches from the appropriate API endpoint based on album type
      */
-    useEffect(() => {
-        if (!name) return
+    const albumType = isSpecial ? 'special' : isBoxes ? 'box' : 'album';
+    const { data: albumData, isLoading: albumLoading, error: albumError } = useQuery(
+        ['readImages', name, albumType],
+        async () => {
+            const res = await fetch(API.readImages(name!, albumType));
+            return res.json();
+        },
+        {
+            enabled: !!name,
+            onSuccess: (json: any) => {
+                setRotation(json.rotation as { [key: string]: number } ?? {});
+            },
+        }
+    );
 
-        const url = new URL(`/api/readImages/${encodeURIComponent(name)}/${isSpecial ? 'special' : isBoxes ? 'box' : 'album'}`, serverURL);
-        fetch(url.toString())
-            .then((res) => res.json())
-            .then((json) => {
-                setImages(json.files as string[]);
-                setRotation(json.rotation as { [key: string]: number });
-            });
-    }, [name, isSpecial, isBoxes])
+    const images: string[] = albumData?.files ?? [];
+
+    if (albumLoading) return <SkeletonGrid count={12} />;
+    if (albumError) return <p>Error loading album: {(albumError as Error).message}</p>;
 
     return (
         <>
@@ -327,9 +313,9 @@ export function Album(): JSX.Element {
                 {images.map((image) => (
                     <Col key={image} xs={12} sm={6} md={4} lg={3}>
                         <Link to={`/photos/picture/${encodeURIComponent(name!)}/${encodeURIComponent(image)}${isSpecial ? '/special' : isBoxes ? '/box' : ''}`}>
-                            <figure className="thumbBox">
+                            <figure className={styles.thumbBox}>
                                 <img
-                                    className="thumbImg"
+                                    className={styles.thumbImg}
                                     style={{ transform: `rotate(${(rotation[image] ?? 0) * 90}deg)`, width: "100%" }}
                                     src={`${baseUrl}/${encodeURIComponent(name!)}/thumbnail/${encodeURIComponent(image)}`}
                                     alt={image}
@@ -375,9 +361,6 @@ export function Picture(): JSX.Element {
     const { album, image, special } = useParams<{ album: string; image: string; special?: string }>();
     const navigate = useNavigate();
 
-    /** List of all image filenames in the current album/box */
-    const [images, setImages] = useState<string[]>([]);
-
     /** Rotation values for images - maps filename to quarter-turns (0-3) */
     const [rotation, setRotation] = useState<{ [key: string]: number }>({});
 
@@ -415,8 +398,7 @@ export function Picture(): JSX.Element {
     const saveRotation = useCallback(async () => {
         if (!album) return;
         try {
-            const url = new URL(`/api/rotation/${encodeURIComponent(album)}/${isSpecial ? 'special' : isBoxes ? 'box' : 'album'}`, serverURL);
-            await fetch(url.toString(), {
+            await fetch(API.rotation(album, isSpecial ? 'special' : isBoxes ? 'box' : 'album'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rotation: rotationRef.current }),
@@ -459,28 +441,25 @@ export function Picture(): JSX.Element {
      * Load images and rotation data for the current album/box
      * Fetches from the appropriate API endpoint based on album type
      */
-    useEffect(() => {
-        if (!album) return;
-        const url = new URL(`/api/readImages/${encodeURIComponent(album)}/${isSpecial ? 'special' : isBoxes ? 'box' : 'album'}`, serverURL);
-        fetch(url.toString())
-            .then(r => r.json())
-            .then(json => {
+    const pictureAlbumType = isSpecial ? 'special' : isBoxes ? 'box' : 'album';
+    const { data: pictureData, isLoading: pictureLoading, error: pictureError } = useQuery(
+        ['readImages', album, pictureAlbumType],
+        async () => {
+            const res = await fetch(API.readImages(album!, pictureAlbumType));
+            return res.json();
+        },
+        {
+            enabled: !!album,
+            onSuccess: (json: any) => {
+                setRotation(json.rotation as { [key: string]: number } ?? {});
                 const files: string[] = json.files ?? [];
-                setImages(files);
-                setRotation(json.rotation as { [key: string]: number } || {});
-            })
-            .catch(console.error);
-    }, [album, isSpecial, isBoxes]);
+                const idx = image ? files.indexOf(image) : 0;
+                setIndex(idx >= 0 ? idx : 0);
+            },
+        }
+    );
 
-    /**
-     * Update current index when image parameter changes
-     * Finds the index of the current image in the loaded images array
-     */
-    useEffect(() => {
-        if (!images.length) return;
-        const idx = image ? images.indexOf(image) : 0;
-        setIndex(idx >= 0 ? idx : 0);
-    }, [image, images]);
+    const images: string[] = pictureData?.files ?? [];
 
     /**
      * Navigate to a specific image by index
@@ -524,6 +503,15 @@ export function Picture(): JSX.Element {
         album && images[index]
             ? `${baseUrl}/${encodeURIComponent(album)}/${encodeURIComponent(images[index])}`
             : '';
+
+    if (pictureLoading) return (
+        <Row className="align-items-center mt-4">
+            <Col xs={{ span: 8, offset: 2 }}>
+                <SkeletonImage aspect="66%" />
+            </Col>
+        </Row>
+    );
+    if (pictureError) return <p>Error loading images: {(pictureError as Error).message}</p>;
 
     return (
         <Row className="align-items-center">

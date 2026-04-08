@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useContext, createContext } from 'react'
 import useWebSocket from 'react-use-websocket';
-import { serverURL, socketURL } from '../constants'
+import { socketURL } from '../constants'
+import { API } from '../api'
 import { useInterval } from '../hooks/useInterval';
 import { DateTime } from 'luxon';
 
@@ -261,8 +262,7 @@ export function WssProvider({ children }: params) {
         });
 
         if (topic === "ESPlist") {
-            const url = new URL('/api/ESPlist', serverURL);
-            fetch(url.toString())
+            fetch(API.ESPlist())
                 .then(r => r.json())
                 .then(data => {
                     Object.keys(data).forEach((a: any) => (data[a].date = new Date(data[a].date)));

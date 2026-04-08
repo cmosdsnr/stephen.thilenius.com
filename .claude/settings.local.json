@@ -11,7 +11,12 @@
       "Bash(grep -n \"void WifiLoop\\\\|void clockLoop\\\\|void loopFtp\" \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/4inDisplay_S3/src/\"*.cpp)",
       "Bash(xargs cat:*)",
       "Bash(node:*)",
-      "Bash(wc -l /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.tsx /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.jsx)"
+      "Bash(wc -l /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.tsx /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.jsx)",
+      "Bash(yarn install:*)",
+      "Bash(yarn build:*)",
+      "Bash(powershell -Command 'Get-ChildItem -Path '\\\\''src'\\\\'' -Filter '\\\\''*.jsx'\\\\'' -Recurse | Rename-Item -NewName { $_.Name -replace '\\\\''\\\\.jsx$'\\\\'', '\\\\''.tsx'\\\\'' }')",
+      "Bash(find . -name \"*.jsx\" -exec bash -c 'mv \"$1\" \"${1%.jsx}.tsx\"' _ {} \\\\;)",
+      "Bash(yarn add:*)"
     ]
   }
 }

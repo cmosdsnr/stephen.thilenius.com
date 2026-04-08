@@ -2,7 +2,7 @@ import React, { ChangeEvent, useState, useRef } from 'react';
 import { Row, Col, Button } from 'react-bootstrap'
 import { FaUpload } from "react-icons/fa";
 import "./Upload.css"
-import { serverURL } from '../../constants';
+import { API } from '../../api';
 
 const Upload = ({ setAvailable }: any) => {
 
@@ -15,7 +15,6 @@ const Upload = ({ setAvailable }: any) => {
     };
 
     const handleUploadClick = () => {
-        console.log(serverURL)
         if (!fileList) {
             return;
         }
@@ -27,8 +26,7 @@ const Upload = ({ setAvailable }: any) => {
         });
 
         // 👇 Uploading the files using the fetch API to the server
-        const url = new URL('/api/upload_files', serverURL);
-        fetch(url.toString(), {
+        fetch(API.uploadFiles(), {
             method: 'POST',
             body: formData,
         })

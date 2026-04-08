@@ -6,7 +6,7 @@ import * as yup from "yup"
 
 import { useData } from '../../contexts/DataContext'
 import { Link, useNavigate } from 'react-router-dom'
-import '../../modals/modals.css'
+import styles from '../../modals/modals.module.css'
 
 export default function UpdateProfile() {
     const { pb } = useData();
@@ -45,7 +45,7 @@ export default function UpdateProfile() {
     }
 
     return (
-        <div className='w-100 mx-auto pt-4' style={{ maxWidth: "800px" }}>
+        <div className={`w-100 mx-auto pt-4 ${styles.updateContent}`}>
             <Card>
                 <Card.Body>
                     <h2 className="text-center mb-4">Update Profile</h2>
@@ -60,7 +60,7 @@ export default function UpdateProfile() {
                         <Form.Group id="other">
                             <Form.Label>Other/Info</Form.Label>
                             <Form.Control
-                                className={errors.other && 'warn'}
+                                                className={errors.other ? styles.warn : undefined}
                                 type="text"
                                 {...register('other')}
 
@@ -86,7 +86,7 @@ export default function UpdateProfile() {
                         <Form.Group id="email">
                             <Form.Label>Email</Form.Label>
                             <Form.Control
-                                className={errors.email && 'warn'}
+                                                className={errors.email ? styles.warn : undefined}
                                 type="email"
                                 {...register('email', { required: true, pattern: /^\S+@\S+$/i })}
                                 required
@@ -95,7 +95,7 @@ export default function UpdateProfile() {
                         <Form.Group id="password">
                             <Form.Label>password</Form.Label>
                             <Form.Control
-                                className={errors.password && 'warn'}
+                                                className={errors.password ? styles.warn : undefined}
                                 type="password"
                                 {...register('password', { required: false, pattern: /^.{8,}$/i })}
                                 placeholder='leave blank to keep the same' />
@@ -126,7 +126,7 @@ export default function UpdateProfile() {
 
                         </Form.Group>
 
-                        <Button disabled={loading} className="w-100" type="submit" style={{ marginTop: '20px' }}>Update</Button>
+                        <Button disabled={loading} className="w-100 mt-3" type="submit">Update</Button>
                     </Form>
                 </Card.Body>
             </Card>

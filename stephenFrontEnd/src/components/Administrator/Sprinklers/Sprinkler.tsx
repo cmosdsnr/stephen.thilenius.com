@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './sprinkler.css'
+import styles from './sprinkler.module.css'
 import { SprinklerInterface } from './SprinklerInterface'
 import { itemNames, dataPoint } from './constants';
 import { AdminMenu } from '../AdminMenu';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { sprinklerChannelColors, sprinklerCycle, sprinklerSelected, errorBanner, warningBanner, textMuted, borderMuted } from '../../../tokens';
 
 type ChannelData = [number, number, number, number,][];
 type EditMode = [number, number, number];
@@ -24,16 +26,7 @@ interface SuspendItem {
 
 const d = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-const RULE_COLORS = [
-    'rgb(255, 200, 200)',
-    'rgb(200, 225, 255)',
-    'rgb(200, 255, 210)',
-    'rgb(255, 235, 170)',
-    'rgb(230, 200, 255)',
-    'rgb(255, 255, 185)',
-    'rgb(175, 255, 235)',
-    'rgb(255, 200, 235)',
-];
+const RULE_COLORS = sprinklerChannelColors;
 
 
 /**
@@ -293,12 +286,12 @@ export default function Sprinkler() {
         if (editMode[0] === chIdx && editMode[1] === -1 && editMode[2] === row) {
             return (
                 <td>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
-                        <input type="number" min="0" max="23" value={hr} onChange={(e) => { setHr(Number(e.target.value)) }} style={{ width: '35px' }} />
+                    <div className={styles.rowHeaderEdit}>
+                        <input type="number" min="0" max="23" value={hr} onChange={(e) => { setHr(Number(e.target.value)) }} className={styles.smallInput} />
                         <span>:</span>
-                        <input type="number" min="0" max="59" value={min} onChange={(e) => { setMin(Number(e.target.value)) }} style={{ width: '35px' }} />
-                        <button onClick={() => endEdit(chIdx, -1, row)} className="ignore-css" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'green' }}>&#10004;</button>
-                        <button onClick={() => setEditMode([0, 0, 0])} className="ignore-css" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'red' }}>&#10006;</button>
+                        <input type="number" min="0" max="59" value={min} onChange={(e) => { setMin(Number(e.target.value)) }} className={styles.smallInput} />
+                        <button onClick={() => endEdit(chIdx, -1, row)} className={styles.ignoreCss} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'green' }}>&#10004;</button>
+                        <button onClick={() => setEditMode([0, 0, 0])} className={styles.ignoreCss} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'red' }}>&#10006;</button>
                     </div>
                 </td>
             )
@@ -308,7 +301,7 @@ export default function Sprinkler() {
                 {label}
                 <button
                     onClick={() => edit(chIdx, -1, row)}
-                    style={{ marginLeft: '4px', fontSize: '9px', padding: '1px 3px', cursor: 'pointer' }}
+                    className={styles.allButton}
                 >
                     ALL
                 </button>
@@ -320,12 +313,12 @@ export default function Sprinkler() {
         <>
             <AdminMenu span={4} offset={8} />
             {rulesError && (
-                <div style={{ background: '#ffcccc', color: '#900', padding: '10px', margin: '10px', borderRadius: '4px', fontWeight: 'bold' }}>
+                <div style={{ background: errorBanner.bg, color: errorBanner.text, padding: '10px', margin: '10px', borderRadius: '4px', fontWeight: 'bold' }}>
                     ESP did not acknowledge rules — check connection.
                 </div>
             )}
             {sprinklerDataLoaded ?
-                <div style={{ paddingBottom: '100px' }}>
+                <div className={styles.paddedBottom}>
                     <div className="container-fluid">
                         <div className="row">
                             <div className="col text-center">
@@ -392,16 +385,16 @@ export default function Sprinkler() {
                                                 {Array.from({ length: numberOfChannels }, (_, channelIndex) => {
                                                     const active = channelActive === channelIndex;
                                                     return (
-                                                        <tr key={channelIndex} className={active ? 'blinkBg' : ''}>
+                                                        <tr key={channelIndex} className={active ? styles.blinkBg : ''}>
                                                             <td className="fw-semibold">{channelIndex}</td>
                                                             <td>
-                                                                <label className="toggle-switch">
+                                                                <label className={styles.toggleSwitch}>
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={active}
                                                                         onChange={() => active ? handleManualOff(channelIndex) : handleManualOn(channelIndex)}
                                                                     />
-                                                                    <span className="toggle-slider" />
+                                                                    <span className={styles.toggleSlider} />
                                                                 </label>
                                                             </td>
                                                         </tr>
@@ -414,8 +407,7 @@ export default function Sprinkler() {
                                                             type="number"
                                                             value={manualDuration}
                                                             onChange={e => setManualDuration(Number(e.target.value))}
-                                                            className="form-control form-control-sm"
-                                                            style={{ width: '65px' }}
+                                                            className={`form-control form-control-sm ${styles.durationInput}`}
                                                         />
                                                     </td>
                                                 </tr>
@@ -428,16 +420,16 @@ export default function Sprinkler() {
                     </div>
 
 
-                    <div style={{ marginTop: '30px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                            <h3 style={{ margin: 0 }}>Rules</h3>
+                    <div className={styles.rulesSection}>
+                        <div className={styles.rulesSectionHeader}>
+                            <h3 className={styles.headingNoMargin}>Rules</h3>
                             <button className="btn btn-sm btn-primary" onClick={() => {
                                 setEditingRule(null);
                                 setRuleModalOpen(true);
                             }}>New Rule</button>
                         </div>
-                        <table className="globalTable" style={{ marginTop: '10px', width: 'calc(100% - 20px)', marginLeft: '10px', marginRight: '10px' }}>
-                            <caption style={{ captionSide: 'bottom', textAlign: 'center', fontSize: '0.8em', color: '#666' }}>Click row to edit</caption>
+                        <table className={`${styles.globalTable} ${styles.rulesTable}`}>
+                            <caption style={{ captionSide: 'bottom', textAlign: 'center', fontSize: '0.8em', color: textMuted }}>Click row to edit</caption>
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -460,7 +452,7 @@ export default function Sprinkler() {
                                             <td style={{ backgroundColor: rc }}>
                                                 {rule.days.some(Boolean)
                                                     ? rule.days.map((isActive, idx) => isActive
-                                                        ? <span key={idx} style={{ backgroundColor: idx < 7 ? 'rgb(200, 230, 255)' : 'rgb(255, 230, 200)', padding: '1px 4px', marginRight: '2px', borderRadius: '3px' }}>
+                                                        ? <span key={idx} style={{ backgroundColor: idx < 7 ? sprinklerCycle.first : sprinklerCycle.second, padding: '1px 4px', marginRight: '2px', borderRadius: '3px' }}>
                                                             {d[idx % 7]}{idx >= 7 ? '₂' : ''}
                                                         </span>
                                                         : null)
@@ -486,9 +478,9 @@ export default function Sprinkler() {
                         const now = new Date();
                         const nowMinutes = now.getHours() * 60 + now.getMinutes();
                         return (
-                            <div style={{ marginTop: '30px', paddingLeft: '10px', paddingRight: '10px' }}>
+                            <div className={styles.calendarSection}>
                                 <h3>4-Week Calendar</h3>
-                                <table style={{ tableLayout: 'fixed', width: '100%' }}>
+                                <table className={styles.calendarTable}>
                                     <thead>
                                         <tr>
                                             {Array.from({ length: 7 }, (_, i) => {
@@ -512,14 +504,14 @@ export default function Sprinkler() {
                                                         <td key={dow} style={{
                                                             aspectRatio: '1',
                                                             verticalAlign: 'top',
-                                                            backgroundColor: isToday ? '#fffde7' : cycleDay < 7 ? 'rgb(220, 235, 255)' : 'rgb(255, 235, 215)',
+                                                            backgroundColor: isToday ? '#fffde7' : cycleDay < 7 ? sprinklerCycle.first : sprinklerCycle.second,
                                                             padding: '4px',
                                                             fontSize: '12px',
                                                             border: '1px solid black',
                                                             outline: isToday ? '2px solid orange' : undefined,
                                                             overflow: 'hidden'
                                                         }}>
-                                                            <div style={{ fontWeight: 'bold', marginBottom: '3px' }}>
+                                                            <div className={styles.calendarDateLabel}>
                                                                 {cellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                             </div>
                                                             {dayRules.map(({ r, ri }) => {
@@ -532,7 +524,7 @@ export default function Sprinkler() {
                                                                     const suspended = suspendList.some(s => s.date === dateKey && s.startTime === startForLine && s.ch === ci);
                                                                     const active = isToday && nowMinutes >= startForLine && nowMinutes < startForLine + dur;
                                                                     const mismatch = active && channelActive !== ci;
-                                                                    const lineClass = active ? (mismatch ? 'blinkRed' : 'blinkBg') : '';
+                                                                    const lineClass = active ? (mismatch ? styles.blinkRed : styles.blinkBg) : '';
                                                                     const line = (
                                                                         <div key={`${ri}-${ci}`} onClick={() => {
                                                                             const item = { date: dateKey, startTime: startForLine, ch: ci };
@@ -637,25 +629,19 @@ function RuleModal({
     })() : [];
 
     return (
-        <div className="modal-overlay" style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-        }}>
-            <div className="modal-content" style={{
-                backgroundColor: 'white', padding: '20px', borderRadius: '5px',
-                maxHeight: '90vh', overflowY: 'auto'
-            }}>
+        <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
                 <h2>{initialRule ? 'Edit Rule' : 'New Rule'}</h2>
 
-                <div style={{ marginBottom: '15px' }}>
+                <div className={styles.modalSection}>
                     {[0, 7].filter(offset => offset < numberOfDays).map(offset => {
                         const weekDays = Array.from({ length: Math.min(7, numberOfDays - offset) }, (_, i) => offset + i);
                         const allChecked = weekDays.every(i => days[i]);
-                        const bg = offset === 0 ? 'rgb(200, 230, 255)' : 'rgb(255, 230, 200)';
+                        const bg = offset === 0 ? sprinklerCycle.first : sprinklerCycle.second;
                         const label = offset === 0 ? 'Week 1' : 'Week 2';
                         const firstColPct = (1.1 / 9.1 * 100).toFixed(2) + '%';
                         const otherColPct = (1 / 9.1 * 100).toFixed(2) + '%';
-                        const sep = '2px solid #999';
+                        const sep = `2px solid ${borderMuted}`;
                         return (
                             <table key={offset} style={{ marginBottom: '6px', tableLayout: 'fixed', width: '100%' }}>
                                 <colgroup>
@@ -672,12 +658,12 @@ function RuleModal({
                                 <tbody>
                                     <tr>
                                         <td style={{ backgroundColor: bg, borderRight: sep }} />
-                                        <td style={{ backgroundColor: allChecked ? '#e5e491' : bg, cursor: 'pointer', textAlign: 'center', borderRight: sep }}
+                                        <td style={{ backgroundColor: allChecked ? sprinklerSelected : bg, cursor: 'pointer', textAlign: 'center', borderRight: sep }}
                                             onClick={() => { const n = [...days]; weekDays.forEach(i => { n[i] = !allChecked; }); setDays(n); }}>
                                             <input type="checkbox" checked={allChecked} readOnly style={{ cursor: 'pointer' }} />
                                         </td>
                                         {weekDays.map(i => (
-                                            <td key={i} style={{ backgroundColor: days[i] ? '#e5e491' : bg, cursor: 'pointer', textAlign: 'center' }}
+                                            <td key={i} style={{ backgroundColor: days[i] ? sprinklerSelected : bg, cursor: 'pointer', textAlign: 'center' }}
                                                 onClick={() => { const n = [...days]; n[i] = !n[i]; setDays(n); }}>
                                                 <input type="checkbox" checked={days[i]} readOnly style={{ cursor: 'pointer' }} />
                                             </td>
@@ -689,10 +675,10 @@ function RuleModal({
                     })}
                 </div>
 
-                <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h4 style={{ margin: 0 }}>Start Time</h4>
+                <div className={styles.startTimeRow}>
+                    <h4 className={styles.headingNoMargin}>Start Time</h4>
                     <DatePicker
-                        className="startTimePicker"
+                        className={styles.startTimePicker}
                         selected={(() => {
                             const date = new Date();
                             date.setHours(startHr);
@@ -713,8 +699,8 @@ function RuleModal({
                     />
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <table style={{ tableLayout: 'fixed', width: '100%' }}>
+                <div className={styles.modalSection}>
+                    <table className={styles.calendarTable}>
                         <colgroup>
                             <col style={{ width: (1.1 / (1.1 + 1 + numberOfChannels) * 100).toFixed(2) + '%' }} />
                             {Array.from({ length: 1 + numberOfChannels }, (_, i) => (
@@ -723,15 +709,15 @@ function RuleModal({
                         </colgroup>
                         <thead>
                             <tr>
-                                <th style={{ borderRight: '2px solid #999' }}>Duration</th>
-                                <th style={{ borderRight: '2px solid #999' }}>All</th>
+                                <th style={{ borderRight: `2px solid ${borderMuted}` }}>Duration</th>
+                                <th style={{ borderRight: `2px solid ${borderMuted}` }}>All</th>
                                 {durations.map((_, idx) => <th key={idx}>Ch {idx}</th>)}
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td style={{ textAlign: 'center', fontSize: '0.85em', borderRight: '2px solid #999' }}>(min)</td>
-                                <td style={{ borderRight: '2px solid #999' }}>
+                                <td style={{ textAlign: 'center', fontSize: '0.85em', borderRight: `2px solid ${borderMuted}` }}>(min)</td>
+                                <td style={{ borderRight: `2px solid ${borderMuted}` }}>
                                     <input
                                         type="number"
                                         value={durations.every(v => v === durations[0]) ? durations[0] : ''}
@@ -760,16 +746,16 @@ function RuleModal({
                 </div>
 
                 {overlaps.length > 0 && (
-                    <div style={{ backgroundColor: '#ffe0e0', border: '1px solid red', borderRadius: '4px', padding: '8px', marginBottom: '10px', color: 'red' }}>
+                    <div style={{ backgroundColor: warningBanner.bg, border: `1px solid ${warningBanner.border}`, borderRadius: '4px', padding: '8px', marginBottom: '10px', color: warningBanner.text }}>
                         Overlaps with: {overlaps.map((r, i) => {
                             const rEnd = (r.startTime + r.durations.reduce((a, b) => a + b, 0)) % 1440;
                             return <span key={i}>{i > 0 ? ', ' : ''}{Math.floor(r.startTime / 60)}:{(r.startTime % 60).toString().padStart(2, '0')}–{Math.floor(rEnd / 60)}:{(rEnd % 60).toString().padStart(2, '0')}</span>;
                         })}
                     </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-                    {initialRule && <button onClick={() => onDelete(initialRule.id)} style={{ backgroundColor: 'red', color: 'white' }}>Delete</button>}
-                    <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+                <div className={styles.modalActions}>
+                    {initialRule && <button onClick={() => onDelete(initialRule.id)} className={styles.deleteButton}>Delete</button>}
+                    <div className={styles.modalActionButtons}>
                         <button onClick={onClose}>Cancel</button>
                         <button onClick={handleSave} disabled={durations.reduce((a, b) => a + b, 0) === 0 || !days.some(Boolean)} style={{ backgroundColor: durations.reduce((a, b) => a + b, 0) === 0 || !days.some(Boolean) ? 'grey' : 'green', color: 'white' }}>OK</button>
                     </div>

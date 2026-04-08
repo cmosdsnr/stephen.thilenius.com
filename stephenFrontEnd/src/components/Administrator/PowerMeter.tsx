@@ -4,14 +4,18 @@
  * Features interactive charts, frequency analysis, and multi-channel current/energy tracking capabilities.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from 'react-query';
+import toast from 'react-hot-toast';
 import { Card, Table, Row, Col, Spinner, Alert, Button, Form } from 'react-bootstrap';
 import Slider from 'rc-slider';
 import { AdminMenu } from './AdminMenu';
 import 'rc-slider/assets/index.css';
 import './admin.css';
-import { serverURL } from '../../constants';
+import { API } from '../../api';
 import { DateTime } from 'luxon';
+import { chartPalette, chartBg, chartBlue, cardBg } from '../../tokens';
+import pmStyles from './PowerMeter.module.css';
 
 import { Line } from 'react-chartjs-2';
 import type { ChartOptions, ChartData } from 'chart.js';
@@ -47,10 +51,7 @@ ChartJS.register(
 const marks = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10' };
 
 /** Color palette for chart series visualization */
-const PALETTE = [
-    '#3366CC', '#DC3912', '#FF9900', '#109618', '#990099',
-    '#0099C6', '#DD4477', '#66AA00', '#B82E2E', '#316395'
-];
+const PALETTE = chartPalette;
 
 /**
  * Represents a data series for chart visualization.
@@ -131,24 +132,17 @@ export default function PowerMeter() {
     /** Current metric type being displayed (current or energy) */
     const [metric, setMetric] = useState<Metrics>('current');
 
-    /** Current measurement data series for all 6 channels */
-    const [currentSeries, setCurrentSeries] = useState<Series[]>([]);
-
-    /** Energy measurement data series for all 6 channels */
-    const [energySeries, setEnergySeries] = useState<Series[]>([]);
-
     /**
-     * Effect hook to fetch and process historical power data.
-     * Fetches data when numDays or metric changes, processes raw measurements
-     * into current and energy time series with proper scaling and offsets.
+     * React Query hook to fetch and process historical power data.
+     * Re-fetches automatically when numDays changes.
      */
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            const url = new URL('/api/powerMeter/Hours', serverURL);
-            url.searchParams.set('hours', (24 * numDays).toString());
-            const res = await fetch(url.toString());
+    const { data: hoursData, isLoading: hoursLoading, error: hoursError } = useQuery(
+        ['powerMeterHours', numDays],
+        async () => {
+            const res = await fetch(API.powerMeterHours(24 * numDays));
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
-            if (json.error) return;
+            if (json.error) throw new Error(json.error);
             const ts = json.start * 3600;
             const step = 60;
 
@@ -189,11 +183,15 @@ export default function PowerMeter() {
                 }
             });
 
-            setCurrentSeries(cur.map((data, i) => ({ label: `ch${i}`, data })));
-            setEnergySeries(eng.map((data, i) => ({ label: `ch${i}`, data })));
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [numDays, metric]);
+            return {
+                currentSeries: cur.map((data, i) => ({ label: `ch${i}`, data })) as Series[],
+                energySeries: eng.map((data, i) => ({ label: `ch${i}`, data })) as Series[],
+            };
+        }
+    );
+
+    const currentSeries: Series[] = hoursData?.currentSeries ?? [];
+    const energySeries: Series[] = hoursData?.energySeries ?? [];
 
     /** Filtered data series based on current metric and selected channels */
     const series = (metric === 'current' ? currentSeries : energySeries)
@@ -263,9 +261,17 @@ export default function PowerMeter() {
             </Row>
 
             {/* Chart */}
-            <Row style={{ backgroundColor: '#FFFFE0', padding: 20, marginBottom: 20 }}>
+            <Row style={{ backgroundColor: chartBg }} className={pmStyles.chartRow}>
                 <Col>
-                    <Line data={chartData} options={options} />
+                    {hoursLoading && (
+                        <Spinner animation="border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                    )}
+                    {hoursError && (
+                        <Alert variant="danger">Error: {(hoursError as Error).message}</Alert>
+                    )}
+                    {!hoursLoading && !hoursError && <Line data={chartData} options={options} />}
                 </Col>
             </Row>
 
@@ -288,10 +294,10 @@ export default function PowerMeter() {
                 <Col xs={12} md={4}>
                     <Button onClick={() => {
                         const sel = ADC1_PINS.findIndex(p => p.value === '36');
-                        fetch(new URL(`/api/powerMeter/runScan?sel=${sel}`, serverURL))
+                        fetch(API.powerMeterRunScan(sel.toString()))
                             .then(res => res.ok && res.json())
                             .then(() => setTimeout(() => window.location.reload(), 2000))
-                            .catch(console.error);
+                            .catch(err => { console.error(err); toast.error('Failed to run frequency scan'); });
                     }}>
                         Scan
                     </Button>
@@ -357,35 +363,20 @@ interface DetailsData {
  * - DFT analysis helps identify signal characteristics and noise
  */
 function DetailsDashboard() {
-    /** Power meter analysis data from the API */
-    const [data, setData] = useState<DetailsData | null>(null);
-    /** Error message if data fetch fails */
-    const [error, setError] = useState<string | null>(null);
-    /** Loading state indicator */
-    const [loading, setLoading] = useState<boolean>(true);
-
     /**
-     * Effect hook to fetch power meter analysis details from the API.
+     * React Query hook to fetch power meter analysis details from the API.
      * Loads frequency analysis, channel statistics, and measurement data.
      */
-    useEffect(() => {
-        const url = new URL('/api/powerMeter/details', serverURL);
-        fetch(url.toString())
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
-            .then((json: DetailsData) => {
-                setData(json);
-                setLoading(false);
-            })
-            .catch(err => {
-                setError(err.message);
-                setLoading(false);
-            });
-    }, []);
+    const { data, isLoading, error } = useQuery<DetailsData>(
+        ['powerMeterDetails'],
+        async () => {
+            const res = await fetch(API.powerMeterDetails());
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json() as Promise<DetailsData>;
+        }
+    );
 
-    if (loading) {
+    if (isLoading) {
         return (
             <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
@@ -393,7 +384,7 @@ function DetailsDashboard() {
         );
     }
     if (error) {
-        return <Alert variant="danger">Error: {error}</Alert>;
+        return <Alert variant="danger">Error: {(error as Error).message}</Alert>;
     }
     if (!data) {
         return null;
@@ -419,8 +410,8 @@ function DetailsDashboard() {
                 label: 'Scan Value',
                 data: scanPoints.map(pt => pt.value),
                 fill: false,                          // no under-curve fill
-                borderColor: '#007bff',               // bootstrap-primary blue
-                backgroundColor: 'rgba(0,123,255,0.1)', // light blue for any point hovers
+                borderColor: chartBlue.solid,
+                backgroundColor: chartBlue.fill,
                 borderWidth: 3,                       // thicker line
                 pointRadius: 0,                       // hide individual points
                 pointHoverRadius: 4,                  // show on hover if needed
@@ -436,8 +427,8 @@ function DetailsDashboard() {
                 label: 'DFT Value',
                 data: dftPoints.map(pt => pt.value),
                 fill: false,                          // no under-curve fill
-                borderColor: '#007bff',               // bootstrap-primary blue
-                backgroundColor: 'rgba(0,123,255,0.1)', // light blue for any point hovers
+                borderColor: chartBlue.solid,
+                backgroundColor: chartBlue.fill,
                 borderWidth: 3,                       // thicker line
                 pointRadius: 0,                       // hide individual points
                 pointHoverRadius: 4,                  // show on hover if needed
@@ -453,8 +444,8 @@ function DetailsDashboard() {
                 label: 'DFT Value',
                 data: dftPoints.slice(507, 517).map(pt => pt.value),
                 fill: false,                          // no under-curve fill
-                borderColor: '#007bff',               // bootstrap-primary blue
-                backgroundColor: 'rgba(0,123,255,0.1)', // light blue for any point hovers
+                borderColor: chartBlue.solid,
+                backgroundColor: chartBlue.fill,
                 borderWidth: 3,                       // thicker line
                 pointRadius: 0,                       // hide individual points
                 pointHoverRadius: 4,                  // show on hover if needed
@@ -477,8 +468,7 @@ function DetailsDashboard() {
      * Sends API request to apply the best frequency and reloads the page.
      */
     const handleWriteFreq = () => {
-        const url = new URL('/api/powerMeter/writeFreq', serverURL);
-        fetch(url.toString())
+        fetch(API.powerMeterWriteFreq())
             .then(res => {
                 if (!res.ok) throw new Error(`Write failed: ${res.status}`);
                 return res.json();
@@ -486,7 +476,7 @@ function DetailsDashboard() {
             .then(() => {
                 setTimeout(() => window.location.reload(), 500);
             })
-            .catch(err => console.error(err));
+            .catch(err => { console.error(err); toast.error('Failed to write frequency to device'); });
     };
 
     return (
@@ -549,15 +539,15 @@ function DetailsDashboard() {
             </Table>
 
             <h5>Frequency Scan</h5>
-            <div style={{ height: 200, backgroundColor: 'white', padding: 10 }}>
+            <div className={pmStyles.scanChart}>
                 <Line data={scanChartData} options={scanChartOptions} />
             </div>
             <h5>dft </h5>
-            <div style={{ height: 200, backgroundColor: 'white', padding: 10 }}>
+            <div className={pmStyles.scanChart}>
                 <Line data={dftChartData} options={scanChartOptions} />
             </div>
             <h5>dft </h5>
-            <div style={{ height: 200, backgroundColor: 'white', padding: 10 }}>
+            <div className={pmStyles.scanChart}>
                 <Line data={dftChartDataB} options={scanChartOptions} />
             </div>
         </div>
@@ -592,29 +582,35 @@ function DetailsDashboard() {
  * - Useful for identifying noise, signal quality, and channel-specific issues
  */
 const StaggeredChannelPlots = () => {
-    /** Raw sample data arrays for each measurement channel */
-    const [samples, setSamples] = useState([]);
-
     /**
-     * Effect hook to fetch raw sample data for waveform visualization.
+     * React Query hook to fetch raw sample data for waveform visualization.
      * Retrieves unprocessed ADC readings for signal analysis.
      */
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const url = new URL('/api/powerMeter/rawData', serverURL);
-                const response = await fetch(url.toString());
-                const json = await response.json();
-                if (json.samples && Array.isArray(json.samples)) {
-                    setSamples(json.samples);
-                }
-            } catch (err) {
-                console.error('Failed to fetch samples:', err);
+    const { data: samplesData, isLoading, error } = useQuery<any[][]>(
+        ['powerMeterRawData'],
+        async () => {
+            const response = await fetch(API.powerMeterRawData());
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const json = await response.json();
+            if (json.samples && Array.isArray(json.samples)) {
+                return json.samples;
             }
-        };
+            return [];
+        }
+    );
 
-        fetchData();
-    }, []);
+    const samples = samplesData ?? [];
+
+    if (isLoading) {
+        return (
+            <Spinner animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+            </Spinner>
+        );
+    }
+    if (error) {
+        return <Alert variant="danger">Error: {(error as Error).message}</Alert>;
+    }
 
     return (
         <div className="space-y-8">
@@ -649,7 +645,7 @@ const StaggeredChannelPlots = () => {
                 return (
                     <div
                         key={idx}
-                        style={{ height: '200px', backgroundColor: '#ffffff', padding: '8px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                        className={pmStyles.waveformCard}
                     >
                         <Line data={data} options={options} />
                     </div>
