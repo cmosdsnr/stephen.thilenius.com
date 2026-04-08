@@ -1,5 +1,10 @@
 #ifdef DESK
 
+/**
+ * @file TabWind.cpp
+ * @brief Wind tab UI implementation for wind data.
+ */
+
 #include <TFT_eWidget.h> //!< Widget library
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -25,11 +30,6 @@
 #define COL2B COL2 + 130
 
 /**
- * @file TabWind.cpp
- * @brief Wind tab UI implementation for wind data.
- */
-
-/**
  * @brief Construct a new Tab Wind object.
  *
  * Represents local wind/weather or desk dashboard.
@@ -38,7 +38,6 @@
 TabWind::TabWind(TFT_eSPI *tft) : Tab()
 {
     name = "Wind";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -95,6 +94,13 @@ void TabWind::draw()
     _tft->print("     Tick:");
 }
 
+/**
+ * @brief Handle touch input on the Wind tab.
+ *
+ * @param x Touch X coordinate.
+ * @param y Touch Y coordinate.
+ * @param lastClick Milliseconds since the previous touch event.
+ */
 void TabWind::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     if (lastClick > 500)
@@ -109,6 +115,9 @@ void TabWind::handle(uint16_t x, uint16_t y, uint32_t lastClick)
     }
 }
 
+/**
+ * @brief Periodic update loop; reads Ultimeter data and sends 15-second aggregated reports.
+ */
 void TabWind::loop()
 {
     uint8_t state = 0;

@@ -1,3 +1,8 @@
+/**
+ * @file EpromData.h
+ * @brief Gliderport EEPROM storage declarations for camera MAC and IP addresses.
+ */
+
 #ifndef GLIDERPORT_EEPROM_H
 #define GLIDERPORT_EEPROM_H
 
@@ -15,7 +20,6 @@
  *
  * @param cameraNumber Index of the camera
  * @param n Pointer to the MAC address array
- * @return void
  */
 void saveCameraMac(uint8_t cameraNumber, uint8_t *n);
 
@@ -24,7 +28,6 @@ void saveCameraMac(uint8_t cameraNumber, uint8_t *n);
  *
  * @param cameraNumber Index of the camera
  * @param n Pointer to the buffer to store the MAC address
- * @return void
  */
 void loadCameraMac(uint8_t cameraNumber, uint8_t *n);
 
@@ -33,7 +36,6 @@ void loadCameraMac(uint8_t cameraNumber, uint8_t *n);
  *
  * @param cameraNumber Index of the camera
  * @param ip IP address object to save
- * @return void
  */
 void saveCameraIP(uint8_t cameraNumber, IPAddress ip);
 

@@ -3,6 +3,7 @@ PROJECT_NAME           = "4in Display with ESP32S3"
 OUTPUT_DIRECTORY       = .                  # keep outputs in docs/html and docs/latex
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO                 # disable LaTeX if you don't need PDFs
+HTML_TIMESTAMP         = YES
 GENERATE_TREEVIEW      = YES
 
 SHORT_NAMES    = YES

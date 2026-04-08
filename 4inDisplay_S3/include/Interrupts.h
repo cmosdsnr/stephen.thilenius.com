@@ -1,5 +1,6 @@
 
 #include <arduino.h>
+#include <freertos/FreeRTOS.h>
 
 /**
  * @file Interrupts.h
@@ -7,6 +8,7 @@
  */
 
 extern uint16_t tick;
+extern portMUX_TYPE timerMuxMain; ///< Shared mux for ISR/main critical sections.
 
 /**
  * @brief Initializes the main hardware timer for interrupts.

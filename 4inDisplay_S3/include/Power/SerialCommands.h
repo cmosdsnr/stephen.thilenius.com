@@ -1,3 +1,8 @@
+/**
+ * @file SerialCommands.h
+ * @brief Power meter serial command declarations.
+ */
+
 #ifndef POWER_SERIAL_COMMANDS_H
 #define POWER_SERIAL_COMMANDS_H
 

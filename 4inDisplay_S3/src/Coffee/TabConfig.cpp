@@ -14,19 +14,24 @@
 #include "Slider.h"
 
 #define LINEH 36
-#define SLIDER_X 150
+#define SLIDER_X 5
 #define SLIDER_Y TAB_H + 50
-#define SLIDER_W 240
 #define SLIDER_H 12
 
 #define BUTTON_ON_COLOR 0x421a //!< BLUE
 #define BUTTON_OFF_COLOR TFT_LIGHTGREY
 #define RADIUS 7
 
+/**
+ * @brief Construct a new TabConfig object.
+ *
+ * Initializes the configuration tab with a slider knob sprite.
+ *
+ * @param tft Display driver.
+ */
 TabConfig::TabConfig(TFT_eSPI *tft) : Tab()
 {
     name = "Configure";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     _knob = new TFT_eSprite(tft); //!< Sprite for the slide knob
@@ -34,6 +39,12 @@ TabConfig::TabConfig(TFT_eSPI *tft) : Tab()
     changed = true;
 }
 
+/**
+ * @brief Draw the configuration tab interface.
+ *
+ * Renders the background and creates a slider widget for adjusting
+ * the coffee fill level in cups.
+ */
 void TabConfig::draw()
 {
     changed = false;
@@ -43,7 +54,7 @@ void TabConfig::draw()
     slide_t param;
 
     //! Slider slot parameters
-    param.slotWidth = SLIDER_W;  //!< Note: ends of slot will be rounded and anti-aliased
+    param.slotWidth = _tft->width() - 10;  //!< Note: ends of slot will be rounded and anti-aliased
     param.slotHeight = SLIDER_H; //!< Length includes rounded ends
     param.slotColor = TFT_BLUE;  //!< Slot colour
     param.slotBgColor = bgColor; //!< Slot background colour for anti-aliasing
@@ -66,12 +77,28 @@ void TabConfig::draw()
     _s1->drawSlider(SLIDER_X, SLIDER_Y, param);
 }
 
+/**
+ * @brief Handle touch input on the Config tab.
+ *
+ * Forwards the touch coordinates to the slider widget.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the last touch event.
+ */
 void TabConfig::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     _s1->checkTouch(x, y);
 }
 
-//! return ms required to fill
+/**
+ * @brief Get the configured fill time in milliseconds.
+ *
+ * Converts the slider position (in quarter-cups) to a fill duration.
+ * One cup takes approximately 2857 ms to fill.
+ *
+ * @return Fill time in milliseconds.
+ */
 uint16_t TabConfig::getFillTime(void)
 {
     float a = 714.3 * (float)_s1->getSliderPosition();
@@ -79,6 +106,12 @@ uint16_t TabConfig::getFillTime(void)
     return (uint16_t)(a); //!< 20s = 7 cups, 1 cup per 2857ms, getSliderPosition() returns 1/4 cups, so 1/4 cup in 714.3ms
 }
 
+/**
+ * @brief Per-loop updates for the Config tab.
+ *
+ * Publishes the slider position as a variable when it changes and
+ * handles deferred variable initialization.
+ */
 void TabConfig::loop()
 {
     static int16_t lastPos = -1;
@@ -95,6 +128,11 @@ void TabConfig::loop()
     }
 }
 
+/**
+ * @brief Schedule deferred variable initialization.
+ *
+ * Sets a flag so that variable values are published on the next loop iteration.
+ */
 void TabConfig::initializeVariables()
 {
     _x = true;

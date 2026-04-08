@@ -18,7 +18,6 @@ u_int64_t lastWindReading = millis();
 
 /**
  * @brief Initializes Gliderport specific hardware/logic.
- * @return void
  */
 void gpSetup()
 {
@@ -29,7 +28,6 @@ void gpSetup()
  *
  * Handles periodic sensor readings (DHT, BMP) and updates
  * the active tab (Gliderport, Rose, Status) with new data.
- * @return void
  */
 void gpLoop()
 {
@@ -107,7 +105,9 @@ void gpLoop()
 #include <HTTPClient.h>
 #include <ESPAsyncWebServer.h>
 
-/**********************************************************************************/
+/**
+ * @brief Sends this device's IP address to the backend server via HTTP GET.
+ */
 void sendIpAddressToServer()
 {
     HTTPClient http;
@@ -129,6 +129,11 @@ void sendIpAddressToServer()
     http.end();
 }
 
+/**
+ * @brief HTTP handler that returns aggregated sensor data as JSON.
+ *
+ * @param request The incoming HTTP request.
+ */
 void addData(AsyncWebServerRequest *request)
 {
     doc.clear();
@@ -156,7 +161,11 @@ void addData(AsyncWebServerRequest *request)
     request->send(response);
 }
 
-/**********************************************************************************/
+/**
+ * @brief HTTP handler that triggers an IP update and responds with confirmation.
+ *
+ * @param request The incoming HTTP request.
+ */
 void pingMe(AsyncWebServerRequest *request)
 {
     sendIpAddressToServer(); //!< server obviously already has the right address, but want the correct update to ocur anyhow

@@ -21,7 +21,6 @@
 TabPowerMeter::TabPowerMeter(TFT_eSPI *tft) : Tab()
 {
     name = "Power Meter";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -37,7 +36,11 @@ void TabPowerMeter::draw()
 }
 
 /**
- * @brief Handles touch events on the Power Meter tab.
+ * @brief Handle touch events on the Power Meter tab.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the previous touch (debounce).
  */
 void TabPowerMeter::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {

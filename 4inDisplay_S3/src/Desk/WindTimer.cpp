@@ -67,17 +67,19 @@ void windTimer::changeInterval(uint32_t us)
 }
 
 /**
- * @brief Detach the wind timer interrupt (stub).
+ * @brief Detaches the wind timer interrupt.
  */
 void windTimer::detach()
 {
+    timerDetachInterrupt(_windTimer);
 }
 
 /**
- * @brief Attach the wind timer interrupt (stub).
+ * @brief Re-attaches the wind timer interrupt.
  */
 void windTimer::attach()
 {
+    timerAttachInterrupt(_windTimer, &windTimer::onTimerWindISR, true);
 }
 
 /**
@@ -103,6 +105,12 @@ bool windTimer::pop(int16_t &speedHigh, int16_t &directionLow, int16_t &directio
     return _queue.pop(speedHigh, directionLow, directionHigh);
 }
 
+/**
+ * @brief Returns the current pin state and whether it changed since last call.
+ *
+ * @param[out] state Combined speed/direction pin state (0-3).
+ * @return true if the state changed since the previous call.
+ */
 bool windTimer::getState(uint8_t &state)
 {
     state = _state;

@@ -6,6 +6,12 @@
 #include "Slider.h"
 #include "Report.h"
 
+/**
+ * @brief Swaps two values of the same type.
+ *
+ * @param a First value.
+ * @param b Second value.
+ */
 template <typename T>
 static inline void
 swap_val(T &a, T &b)
@@ -122,6 +128,13 @@ int16_t Slider::getSliderPosition(void)
     return _invert ? _sliderMax - _sliderPos : _sliderPos;
 }
 
+/**
+ * @brief Checks if a touch coordinate falls within the slider region and moves the knob.
+ *
+ * @param tx Touch X coordinate.
+ * @param ty Touch Y coordinate.
+ * @return bool True if the touch was inside the slider area.
+ */
 bool Slider::checkTouch(uint16_t tx, uint16_t ty)
 {
     if (tx >= (_sxs + _textWidth - 1 + _kwidth / 2) && tx <= _sxe - _kwidth / 2 && ty >= _sys && ty <= _sye)
@@ -138,6 +151,15 @@ bool Slider::checkTouch(uint16_t tx, uint16_t ty)
     return false;
 }
 
+/**
+ * @brief Draws the slider at a given position using a parameter struct.
+ *
+ * Configures all slider and knob properties from the param struct, then renders.
+ *
+ * @param x X coordinate for the slider.
+ * @param y Y coordinate for the slider.
+ * @param param Slider configuration parameters.
+ */
 void Slider::drawSlider(uint16_t x, uint16_t y, slide_t param)
 {
     _slotHeight = param.slotHeight;
@@ -165,6 +187,14 @@ void Slider::drawSlider(uint16_t x, uint16_t y, slide_t param)
     drawSlider(x, y);
 }
 
+/**
+ * @brief Draws the slider at a given position using internal properties.
+ *
+ * Renders the slot, knob, title, and scale labels on the TFT display.
+ *
+ * @param x X coordinate for the slider.
+ * @param y Y coordinate for the slider.
+ */
 void Slider::drawSlider(uint16_t x, uint16_t y)
 {
     _xpos = x + 2;
@@ -218,6 +248,9 @@ void Slider::drawSlider(uint16_t x, uint16_t y)
     drawValue();
 }
 
+/**
+ * @brief Draws the current slider value label in the text area.
+ */
 void Slider::drawValue()
 {
     _tft->setTextDatum(TL_DATUM);
@@ -228,6 +261,11 @@ void Slider::drawValue()
     _tft->drawString(String(getSliderPosition() / 4), _sxs + 6 + (pos < 40 ? 4 : 0), _sys, 2);
 }
 
+/**
+ * @brief Animates the knob to a new position within the scale range.
+ *
+ * @param val Target value to move the slider to.
+ */
 void Slider::moveTo(int16_t val)
 {
     val = constrain(val, _sliderMin, _sliderMax);
@@ -247,6 +285,11 @@ void Slider::moveTo(int16_t val)
     drawValue();
 }
 
+/**
+ * @brief Draws the knob sprite at the specified horizontal position.
+ *
+ * @param kpos Horizontal pixel position for the knob.
+ */
 void Slider::drawKnob(uint16_t kpos)
 {
     uint16_t x, y;
@@ -256,6 +299,14 @@ void Slider::drawKnob(uint16_t kpos)
     _spr->pushSprite(x, y);
 }
 
+/**
+ * @brief Gets the bounding box of the slider as start and end coordinates.
+ *
+ * @param xs Pointer to receive the start X coordinate.
+ * @param ys Pointer to receive the start Y coordinate.
+ * @param xe Pointer to receive the end X coordinate.
+ * @param ye Pointer to receive the end Y coordinate.
+ */
 void Slider::getBoundingBox(int16_t *xs, int16_t *ys, int16_t *xe, int16_t *ye)
 {
     //! Bounds already corrected for Sprite wipe action
@@ -265,6 +316,14 @@ void Slider::getBoundingBox(int16_t *xs, int16_t *ys, int16_t *xe, int16_t *ye)
     *ye = _sye;
 }
 
+/**
+ * @brief Gets the bounding rectangle of the slider as position and dimensions.
+ *
+ * @param x Pointer to receive the X position.
+ * @param y Pointer to receive the Y position.
+ * @param w Pointer to receive the width.
+ * @param h Pointer to receive the height.
+ */
 void Slider::getBoundingRect(int16_t *x, int16_t *y, uint16_t *w, uint16_t *h)
 {
     //! Corrected to be outside slider draw zone

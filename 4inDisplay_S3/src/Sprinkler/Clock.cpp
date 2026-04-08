@@ -1,3 +1,8 @@
+/**
+ * @file Clock.cpp
+ * @brief Sprinkler 14-day boundary clock and schedule position calculations.
+ */
+
 #ifdef SPRINKLER
 
 #include "Sprinkler/Clock.h"
@@ -6,6 +11,11 @@
 
 BoundaryData boundaryData = {0, 0, 0, {0}};
 
+/**
+ * @brief Calculates the 14-day cycle boundary aligned to local Sunday midnight.
+ *
+ * @return true if the time system is ready and the boundary was set, false otherwise.
+ */
 bool setBoundaryTime()
 {
     if (!lastRebootFlag)
@@ -40,35 +50,63 @@ bool setBoundaryTime()
     Report.printf("day of this week: %d\n", timeInfo.tm_wday);
     Report.printf("days since boundary: %d\n", boundaryData.daysSinceBoundary);
     Report.printf("epoch now: %d\n", getEpoch());
-    Report.printf("localTime: %s\n", getLocalTime());
+    char localTimeBuf[12];
+    getLocalTime(localTimeBuf, sizeof(localTimeBuf));
+    Report.printf("localTime: %s\n", localTimeBuf);
     Report.printf("today starts at: %d\n", boundaryData.dayStart);
 
     sendVariables();
     return true;
 }
 
+/**
+ * @brief Returns the epoch time of the current 14-day cycle boundary.
+ *
+ * @return time_t Boundary epoch.
+ */
 time_t getBoundary()
 {
     return boundaryData.boundary;
 }
 
-// Compute days elapsed since boundary from current epoch.
-// boundary is aligned to local midnight, so integer division rolls over at local midnight.
+/**
+ * @brief Computes days elapsed since the boundary from the current epoch.
+ *
+ * Boundary is aligned to local midnight, so integer division rolls over
+ * at local midnight.
+ *
+ * @return Number of days elapsed.
+ */
 static uint32_t daysElapsed()
 {
     return (uint32_t)((getEpoch() - boundaryData.boundary) / (24 * 60 * 60));
 }
 
+/**
+ * @brief Returns the current day index within the 14-day cycle (0-13).
+ *
+ * @return Day index modulo NUM_DAYS.
+ */
 uint8_t getDaysSinceBoundary()
 {
     return (uint8_t)(daysElapsed() % NUM_DAYS);
 }
 
+/**
+ * @brief Returns the epoch time of the start of the current day.
+ *
+ * @return time_t Epoch at local midnight today.
+ */
 time_t getDayStart()
 {
     return boundaryData.boundary + daysElapsed() * (24 * 60 * 60);
 }
 
+/**
+ * @brief Returns the current position within the schedule (day index and minutes into day).
+ *
+ * @return SchedulePosition containing daysSinceBoundary and minutesIntoDay.
+ */
 SchedulePosition getSchedulePosition()
 {
     SchedulePosition pos;

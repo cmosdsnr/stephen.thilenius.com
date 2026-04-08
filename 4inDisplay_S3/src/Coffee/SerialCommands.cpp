@@ -9,6 +9,10 @@
 #include "Report.h"
 #include <Arduino.h>
 
+constexpr MenuItem menu2[] = {{'0', "Main menu", 0, nullptr},
+                               {'?', "This help", 0, nullptr}};
+const size_t menu2Size = sizeof(menu2) / sizeof(menu2[0]);
+
 /**
  * @brief Handles serial commands for the Coffee module.
  *

@@ -15,16 +15,12 @@
 
 #include "Tab.h"
 #include "TabNetwork.h"
+#include "Colors.h"
 
 #define TAB_H 65
 #define CORNER_RADIUS 15
 
 #define SPACING 2 // spacing between tabs at top of screen
-
-#define TAB0COLOR 0xd7ff
-#define TAB1COLOR 0xdebf
-#define TAB3COLOR 0xfffa
-#define TAB4COLOR 0xfffa
 
 #define NETWORK_TAB 0
 
@@ -91,6 +87,7 @@ private:
     uint8_t _tabCount = 4;
     bool connected = false;
     int16_t _padding = 0;
+    uint8_t _headerFont = 2;
 };
 
 extern Tabs *tabs;

@@ -1,0 +1,31 @@
+{
+  "name": "Sprinkler App",
+  "entryPoints": [
+    "contexts/WssContext.tsx",
+    "contexts/SprinklerContext.tsx",
+    "constants/sprinkler.ts",
+    "constants/theme.ts",
+    "constants/index.ts",
+    "components/zones/Zone.tsx",
+    "components/zones/Zones.tsx",
+    "app/_layout.tsx",
+    "app/(tabs)/_layout.tsx",
+    "app/(tabs)/index.tsx",
+    "app/(tabs)/manual.tsx",
+    "app/(tabs)/rules.tsx",
+    "app/(tabs)/calendar.tsx",
+    "app/(tabs)/variables.tsx",
+    "app/specificEdit.tsx"
+  ],
+  "out": "docs",
+  "skipErrorChecking": true,
+  "compilerOptions": {
+    "allowJs": true,
+    "jsx": "react-native"
+  },
+  "exclude": [
+    "**/node_modules/**"
+  ],
+  "includeVersion": true,
+  "readme": "README.md"
+}

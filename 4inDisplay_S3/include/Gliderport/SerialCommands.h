@@ -1,3 +1,8 @@
+/**
+ * @file SerialCommands.h
+ * @brief Gliderport serial command menu declarations.
+ */
+
 #ifndef GLIDERPORT_SERIAL_COMMANDS_H
 #define GLIDERPORT_SERIAL_COMMANDS_H
 

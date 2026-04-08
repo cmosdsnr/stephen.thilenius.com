@@ -36,6 +36,12 @@ Networks::~Networks()
     }
 }
 
+/**
+ * @brief Main network management loop.
+ *
+ * Processes scan results, retries failed scans, monitors connection state,
+ * and auto-connects to available known networks.
+ */
 void Networks::loop()
 {
     uint64_t lastMillis = millis();
@@ -155,7 +161,12 @@ bool Networks::processScanResults()
     }
 }
 
-//! a function that returns an array of visible networks with their ssid and rssi
+/**
+ * @brief Returns an array of currently visible networks.
+ *
+ * @param countOut Reference set to the number of visible networks found.
+ * @return VisibleNetwork* Heap-allocated array of visible networks, or nullptr if none.
+ */
 VisibleNetwork *Networks::getVisibleNetworks(int &countOut)
 {
     int visibleCount = 0;
@@ -180,10 +191,29 @@ VisibleNetwork *Networks::getVisibleNetworks(int &countOut)
             j++;
         }
     }
+
+    // Sort by RSSI descending (strongest signal first)
+    for (int i = 1; i < visibleCount; i++)
+    {
+        VisibleNetwork key = result[i];
+        int k = i - 1;
+        while (k >= 0 && result[k].rssi < key.rssi)
+        {
+            result[k + 1] = result[k];
+            k--;
+        }
+        result[k + 1] = key;
+    }
+
     return result;
 }
 
-//! a function that returns an array of saved networks (with passwords)
+/**
+ * @brief Returns an array of saved networks that have stored passwords.
+ *
+ * @param countOut Reference set to the number of saved networks found.
+ * @return SavedNetwork* Heap-allocated array of saved networks, or nullptr if none.
+ */
 SavedNetwork *Networks::getSavedNetworks(int &countOut)
 {
     int savedCount = 0;
@@ -213,6 +243,12 @@ SavedNetwork *Networks::getSavedNetworks(int &countOut)
     return result;
 }
 
+/**
+ * @brief Checks if the saved network at the given index is the selected network.
+ *
+ * @param i Index into the saved networks list.
+ * @return bool True if the network at index i is selected.
+ */
 bool Networks::isSelected(int i)
 {
     int c = findIndex(i);
@@ -224,6 +260,11 @@ bool Networks::isSelected(int i)
     return false;
 }
 
+/**
+ * @brief Selects a saved network by index and initiates a connection.
+ *
+ * @param i Index into the saved networks list.
+ */
 void Networks::selectNetwork(int i)
 {
     int c = findIndex(i);
@@ -236,6 +277,12 @@ void Networks::selectNetwork(int i)
     }
 }
 
+/**
+ * @brief Finds the main network list index for the i-th saved network.
+ *
+ * @param i Index into the saved networks list.
+ * @return int Index in the main networks array, or -1 if not found.
+ */
 int Networks::findIndex(int i)
 {
     int countOut;
@@ -253,6 +300,13 @@ int Networks::findIndex(int i)
     return -1;
 }
 
+/**
+ * @brief WiFi event callback handler.
+ *
+ * Reboots the device on disconnection if a previous connection was established.
+ *
+ * @param event The WiFi event type.
+ */
 void WiFiEvent(WiFiEvent_t event)
 {
     switch (event)
@@ -272,6 +326,9 @@ void WiFiEvent(WiFiEvent_t event)
     }
 }
 
+/**
+ * @brief Initiates a WiFi connection to the currently selected network.
+ */
 void Networks::wifiConnect()
 {
 
@@ -303,9 +360,15 @@ void Networks::wifiConnect()
     }
 }
 
+/**
+ * @brief Handles a failed WiFi connection attempt.
+ *
+ * Falls back to Access Point mode with a captive portal and mDNS.
+ */
 void Networks::handleConnectionFailure()
 {
     connecting = false;
+    _apMode = true;
     selectedIndex = -1;
     selectedNetwork = nullptr;
     networksChanged = true; //!< force display redraw
@@ -334,9 +397,16 @@ void Networks::handleConnectionFailure()
     Inet = false; //!< we can't reach the database
 }
 
+/**
+ * @brief Handles a successful WiFi connection.
+ *
+ * Sets up time, saves connection config to EEPROM, prints network info,
+ * and registers the ESP with the remote server.
+ */
 void Networks::handleConnectionSuccess()
 {
     connecting = false;
+    _apMode = false;
     Inet = true;
     setupTime();
     //! If fast-connect (EEPROM path) left selectedIndex unset, find the connected SSID in our list
@@ -380,6 +450,18 @@ void Networks::handleConnectionSuccess()
     http.end();
 }
 
+/**
+ * @brief Adds a network to the list or updates an existing entry.
+ *
+ * If the SSID already exists, updates its password, visibility, and RSSI.
+ * Otherwise, allocates space and appends the new network.
+ *
+ * @param ssid Network SSID.
+ * @param password Network password (empty string if unknown).
+ * @param setVisible Whether the network is currently visible in scans.
+ * @param rssi Signal strength in dBm.
+ * @return bool True on success, false on memory allocation failure.
+ */
 bool Networks::addNetwork(String ssid, String password, bool setVisible, int rssi)
 {
     //! see if the network already exists
@@ -432,6 +514,13 @@ bool Networks::addNetwork(String ssid, String password, bool setVisible, int rss
     return true;
 }
 
+/**
+ * @brief Adds or updates the password for an SSID and persists the change.
+ *
+ * @param ssid Network SSID.
+ * @param password Network password.
+ * @return bool True if the network was added/updated successfully.
+ */
 bool Networks::addPassword(String ssid, String password)
 {
     if (addNetwork(ssid, password, true))
@@ -442,6 +531,12 @@ bool Networks::addPassword(String ssid, String password)
     return false;
 }
 
+/**
+ * @brief Removes the stored password for a given SSID.
+ *
+ * @param ssid Network SSID whose password should be cleared.
+ * @return bool True if the password was removed, false if not found or already empty.
+ */
 bool Networks::removePassword(String ssid)
 {
     networkStruct *n = getNetwork(ssid);
@@ -455,7 +550,12 @@ bool Networks::removePassword(String ssid)
     return true;
 }
 
-//! remove the i-th saved network
+/**
+ * @brief Removes the i-th saved network from the list and persists the change.
+ *
+ * @param i Index into the saved networks list.
+ * @return bool True if the network was removed, false if index is invalid or not found.
+ */
 bool Networks::removeNetwork(uint8_t i)
 {
     int countOut;
@@ -503,6 +603,9 @@ bool Networks::removeNetwork(uint8_t i)
     return true;
 }
 
+/**
+ * @brief Prints all networks in the list with their SSID, RSSI, and status.
+ */
 void Networks::printNetworks()
 {
     Report.printf("--- Network List (%d) ---\n", count);
@@ -519,6 +622,9 @@ void Networks::printNetworks()
     }
 }
 
+/**
+ * @brief Prints only saved networks (those with passwords) and their status.
+ */
 void Networks::printSavedNetworks()
 {
     Report.printf("--- Network List (%d) ---\n", count);
@@ -537,6 +643,11 @@ void Networks::printSavedNetworks()
     }
 }
 
+/**
+ * @brief Reads saved network credentials from the LittleFS network file.
+ *
+ * Supports both legacy and current file formats.
+ */
 void Networks::readNetworkFile()
 {
     //! Check existence FIRST to avoid the error log
@@ -602,6 +713,9 @@ void Networks::readNetworkFile()
     }
 }
 
+/**
+ * @brief Writes all networks with passwords to the LittleFS network file.
+ */
 void Networks::writeNetworkFile()
 {
     fs::File f = LittleFS.open(NETWORK_FILE, "w");
@@ -624,6 +738,9 @@ void Networks::writeNetworkFile()
     }
 }
 
+/**
+ * @brief Creates the network file with default SSID/password entries.
+ */
 void Networks::initiateNetworkFile()
 {
     fs::File f = LittleFS.open(NETWORK_FILE, "w");

@@ -20,6 +20,9 @@ constexpr MenuItem menu2[] = {{'0', "Main menu", 0, nullptr},
                               {'?', "This help", 0, nullptr}};
 const size_t menu2Size = sizeof(menu2) / sizeof(menu2[0]);
 
+/**
+ * @brief Prints the full schedule and current state to the serial console.
+ */
 void showData()
 {
     const char *dayLabels[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};

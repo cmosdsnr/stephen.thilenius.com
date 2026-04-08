@@ -14,6 +14,9 @@
 
 Sensors sensors;
 
+/**
+ * @brief Constructs the Sensors manager and initializes DHT sensor.
+ */
 Sensors::Sensors() : dht(new DHT(DHT_PIN, DHT_TYPE))
 {
     dht->begin();
@@ -34,6 +37,9 @@ Sensors::Sensors() : dht(new DHT(DHT_PIN, DHT_TYPE))
     windReading.windVector.y = 0;
 }
 
+/**
+ * @brief Initializes the BMP280 and verifies the DHT11 sensor.
+ */
 void Sensors::initBMP()
 {
 
@@ -73,6 +79,12 @@ void Sensors::initBMP()
     }
 }
 
+/**
+ * @brief Returns averaged DHT data and optionally resets accumulators.
+ *
+ * @param reset If true, resets the accumulated readings after retrieval.
+ * @return dhtData Averaged temperature and humidity with sample count.
+ */
 dhtData Sensors::getDhtData(bool reset)
 {
     dhtData result;
@@ -88,6 +100,12 @@ dhtData Sensors::getDhtData(bool reset)
     return result;
 }
 
+/**
+ * @brief Returns averaged BMP data and optionally resets accumulators.
+ *
+ * @param reset If true, resets the accumulated readings after retrieval.
+ * @return bmpData Averaged temperature and pressure with sample count.
+ */
 bmpData Sensors::getBmpData(bool reset)
 {
     bmpData result;
@@ -103,6 +121,9 @@ bmpData Sensors::getBmpData(bool reset)
     return result;
 }
 
+/**
+ * @brief Resets all accumulated DHT and BMP readings to zero.
+ */
 void Sensors::reset()
 {
     dhtReading.count = 0;
@@ -113,6 +134,11 @@ void Sensors::reset()
     bmpReading.pressure = 0;
 }
 
+/**
+ * @brief Samples the DHT11 sensor and accumulates the reading.
+ *
+ * @return true if a valid reading was obtained, false otherwise.
+ */
 bool Sensors::sampleDht11()
 {
     sendChanges();
@@ -136,6 +162,11 @@ bool Sensors::sampleDht11()
     }
 }
 
+/**
+ * @brief Samples the BMP280 sensor and accumulates the reading.
+ *
+ * @return true if a valid reading was obtained, false if BMP is not initialized.
+ */
 bool Sensors::sampleBmp()
 {
     if (bmp)
@@ -156,6 +187,12 @@ bool Sensors::sampleBmp()
     }
 }
 
+/**
+ * @brief Records a wind speed and direction sample using vector averaging.
+ *
+ * @param spd Wind speed in mph.
+ * @param dir Wind direction in degrees.
+ */
 void Sensors::recordWind(float spd, float dir)
 {
     if (reportSpeed)
@@ -180,6 +217,12 @@ void Sensors::recordWind(float spd, float dir)
         windReading.direction += 360.0;
 }
 
+/**
+ * @brief Returns accumulated wind data and optionally resets accumulators.
+ *
+ * @param reset If true, resets the accumulated wind readings after retrieval.
+ * @return windData Current wind speed, direction, count, and vector.
+ */
 windData Sensors::getWindData(bool reset)
 {
 
@@ -194,6 +237,11 @@ windData Sensors::getWindData(bool reset)
     return result;
 }
 
+/**
+ * @brief Sends changed sensor data to connected WebSocket clients.
+ *
+ * @return true if changes were detected and sent, false otherwise.
+ */
 bool Sensors::sendChanges()
 {
 
@@ -266,6 +314,11 @@ bool Sensors::sendChanges()
     return true;
 }
 
+/**
+ * @brief Adds all sensor data (wind, BMP, DHT) to a JSON object.
+ *
+ * @param variables JSON object to populate with sensor readings.
+ */
 void Sensors::addAllData(JsonObject variables)
 {
     JsonObject w = variables.createNestedObject("Wind Data");

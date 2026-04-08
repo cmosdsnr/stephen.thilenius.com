@@ -19,6 +19,12 @@
 VL53L0X sensor;
 bool sensorFound = false;
 
+/**
+ * @brief Initialize the VL53L0X distance sensor.
+ *
+ * Configures the sensor with the selected ranging profile
+ * (long range, high speed, or high accuracy).
+ */
 void setupDistance()
 {
     pinMode(48, INPUT_PULLUP);
@@ -55,6 +61,12 @@ void setupDistance()
 
 static unsigned long lastReading = 0;
 
+/**
+ * @brief Periodic distance measurement loop.
+ *
+ * Reads the sensor every 2 seconds and publishes the value
+ * via writeVariable. Reports a timeout if the sensor stalls.
+ */
 void distanceLoop()
 {
     if (sensorFound && (unsigned long)(millis() - lastReading) > 2000)
@@ -68,6 +80,11 @@ void distanceLoop()
     }
 }
 
+/**
+ * @brief Get the latest distance reading from the sensor.
+ *
+ * @return Distance in millimeters, or 0 if the sensor was not found.
+ */
 uint16_t getDistance()
 {
     if (sensorFound)

@@ -1,3 +1,8 @@
+/**
+ * @file SerialCommands.h
+ * @brief Sprinkler serial command menu declarations.
+ */
+
 #ifndef SPRINKLER_SERIAL_COMMANDS_H
 #define SPRINKLER_SERIAL_COMMANDS_H
 

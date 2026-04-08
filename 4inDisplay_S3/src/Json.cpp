@@ -45,9 +45,6 @@ void SerialToJson(const uint8_t *buffer, size_t len)
  *
  * Creates a list of available commands with descriptions
  * for the web interface.
- *
- * @param menu Array of menu items
- * @param size size of menu array
  */
 void MenusToJson()
 {
@@ -93,6 +90,16 @@ void MenusToJson()
 
 std::map<String, String> _lastVar;
 
+/**
+ * @brief Checks whether a variable value has changed since last call.
+ *
+ * Compares the current value against the previously stored value
+ * and updates the internal cache.
+ *
+ * @param name Variable identifier key.
+ * @param value Current value to compare.
+ * @return True if the value changed or is new, false otherwise.
+ */
 bool variablechanged(const char *name, String value)
 {
     if (_lastVar.find(name) != _lastVar.end() && _lastVar[name] == value)
@@ -123,6 +130,13 @@ void VariableToJson(const char *name, String value)
 
 /**
  * @brief Serializes all tracked variables to JSON.
+ *
+ * Collects project-specific variables, system info (IP, heap, epoch, etc.),
+ * and only includes values that have changed since the last call unless
+ * force is true.
+ *
+ * @param force If true, includes all variables regardless of change status.
+ * @return True if any variables were serialized, false if nothing changed.
  */
 bool AllVariablesToJson(bool force)
 {
@@ -193,6 +207,10 @@ bool AllVariablesToJson(bool force)
 /**
  * @brief Serializes an event payload to JSON.
  *
+ * Includes timestamp, subject, and description fields.
+ *
+ * @param subject Event subject or title.
+ * @param message Event description or body text.
  */
 void EventToJson(const char *subject, const char *message)
 {
@@ -363,6 +381,12 @@ void SDInfoToJson()
     serializeJson(doc, str);
 }
 
+/**
+ * @brief Generates JSON for ESP32 chip information.
+ *
+ * Includes CPU frequency, model, core count, feature flags,
+ * silicon revision, and flash size.
+ */
 void espChipInfoToJson()
 {
 
@@ -425,6 +449,12 @@ void espChipInfoToJson()
     serializeJson(doc, str);
 }
 
+/**
+ * @brief Generates JSON for current GPIO pin values.
+ *
+ * Reads the digital state of all 48 GPIO pins and serializes
+ * them into a JSON array. Invalid GPIOs are marked with "X".
+ */
 void PinValuesToJson()
 {
     // Use a local document to avoid racing with Sprinkler's Core 1 writes to the shared doc/str globals

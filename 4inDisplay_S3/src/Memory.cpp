@@ -1,3 +1,8 @@
+/**
+ * @file Memory.cpp
+ * @brief SD, LittleFS, and PSRAM initialization.
+ */
+
 #include <Arduino.h>
 #include <SD.h>
 #include <LittleFS.h>
@@ -16,11 +21,6 @@ uint64_t sdUsedBytesMB = 0;
 uint64_t sdCachedUsedMB = 0;
 uint32_t sdCachedSectorSize = 0;
 uint64_t sdCachedNumSectors = 0;
-
-/**
- * @file Memory.cpp
- * @brief SD, LittleFS, and PSRAM initialization.
- */
 
 /**
  * @brief Initializes the SD card hardware.
@@ -92,6 +92,11 @@ String humanReadableSize(const size_t bytes)
         return String(bytes / 1024.0 / 1024.0 / 1024.0) + " GB";
 }
 
+/**
+ * @brief Initializes the LittleFS file system.
+ *
+ * Prints flash size and LittleFS usage statistics.
+ */
 void setupLittleFS()
 {
     //! Initialize LittleFS
@@ -114,6 +119,11 @@ void setupLittleFS()
     printf("LittleFS Free space: %s\n\n", humanReadableSize(totalBytes - usedBytes).c_str());
 }
 
+/**
+ * @brief Initializes PSRAM if available.
+ *
+ * Performs a test allocation to verify PSRAM is usable.
+ */
 void setupPSRAM()
 {
     //! Initialize PSRAM

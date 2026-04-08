@@ -10,6 +10,7 @@
 #include "Clock.h"
 #include "Coffee/WebSockets.h"
 #include "Coffee/SocketCodes.h"
+#include "Json.h"
 
 #define NUM_EVENT_HEADERS 3
 const char *eventHeaders[NUM_EVENT_HEADERS] = {"TimeStamp", "Event", "-"};
@@ -19,6 +20,11 @@ const char *vNames[NUM_VARS] = {"local Time", "epoch"};
 
 /**********************************************************************************/
 
+/**
+ * @brief Add project-specific variables to a JSON payload.
+ *
+ * @param variables JSON object to populate with Coffee module variables.
+ */
 void addProjectVariables(JsonObject variables)
 {
 }
@@ -39,9 +45,13 @@ void addProjectVariables(JsonObject variables)
 //     doc["variables"][EPOCH] = getEpoch();
 // }
 
-/**********************************************************************************/
+/**
+ * @brief Handle an incoming WebSocket message for the Coffee module.
+ *
+ * Populates the shared JSON document with a READ response code.
+ */
 void handleMessage()
 {
-    doc["code"] = CODE_READ;
+    doc["code"] = ExtendedSocketCode::READ;
 }
 #endif

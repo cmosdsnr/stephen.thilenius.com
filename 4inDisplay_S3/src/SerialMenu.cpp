@@ -11,20 +11,25 @@
 
 const size_t menuSizes[] = {sizeof(menu0) / sizeof(menu0[0]), sizeof(menu1) / sizeof(menu1[0]), menu2Size};
 
+/**
+ * @brief Construct a new SerialMenuClass instance.
+ */
 SerialMenuClass::SerialMenuClass()
 {
 }
 
+/**
+ * @brief Destroy the SerialMenuClass instance.
+ */
 SerialMenuClass::~SerialMenuClass()
 {
 }
 
 /**
- * @brief Retrieves the number of parameters for a given command in the selected menu.
+ * @brief Retrieves the number of parameters for a given command in the active menu.
  *
- * @param selector The current menu selection.
  * @param cmd The command character to look up.
- * @return Number of parameters required for the command, or 0 if not found.
+ * @return uint8_t Number of parameters required for the command, or 0 if not found.
  */
 uint8_t SerialMenuClass::getNumberParameters(char cmd)
 {
@@ -44,9 +49,9 @@ uint8_t SerialMenuClass::getNumberParameters(char cmd)
 }
 
 /**
- * @brief Prints the current menu to specified devices.
+ * @brief Prints the specified menu to serial output.
  *
- * @param d Target device(s) (MAIN_MENU)
+ * @param selector The menu to display (MAIN_MENU, SSID_MENU, or SPEC_MENU).
  */
 void SerialMenuClass::printMenu(MenuSelect selector)
 {

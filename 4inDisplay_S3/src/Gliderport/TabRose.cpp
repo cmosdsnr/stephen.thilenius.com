@@ -32,7 +32,6 @@
 TabRose::TabRose(TFT_eSPI *tft) : Tab()
 {
     name = "Rose";
-    bgColor = 0xd7ff; //!< Light purple/blue background
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true; //!< Mark as changed to trigger initial draw

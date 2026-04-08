@@ -57,6 +57,13 @@ void Button::draw(int cornerRadius)
     _tft->drawString(_text, textX, textY, 2); //!< Font size 2
 }
 
+/**
+ * @brief Handles a touch event and executes the callback if within bounds.
+ *
+ * @param x X coordinate of the touch event.
+ * @param y Y coordinate of the touch event.
+ * @return true if the button was clicked and the callback executed.
+ */
 bool Button::handle(uint16_t x, uint16_t y)
 {
 
@@ -77,11 +84,22 @@ bool Button::handle(uint16_t x, uint16_t y)
     return false;
 }
 
+/**
+ * @brief Sets or changes the button callback function.
+ *
+ * @param callback New callback function to execute on button press.
+ */
 void Button::setCallback(std::function<void()> callback)
 {
     _callback = callback;
 }
 
+/**
+ * @brief Changes the button text and optionally redraws.
+ *
+ * @param newText New text label for the button.
+ * @param redraw Whether to immediately redraw the button.
+ */
 void Button::setText(const char *newText, bool redraw)
 {
     _text = newText;
@@ -91,6 +109,13 @@ void Button::setText(const char *newText, bool redraw)
     }
 }
 
+/**
+ * @brief Changes button colors and optionally redraws.
+ *
+ * @param newBgColor New background color (RGB565 format).
+ * @param newTextColor New text color (RGB565 format).
+ * @param redraw Whether to immediately redraw the button.
+ */
 void Button::setColors(uint16_t newBgColor, uint16_t newTextColor, bool redraw)
 {
     _bgColor = newBgColor;
@@ -101,18 +126,36 @@ void Button::setColors(uint16_t newBgColor, uint16_t newTextColor, bool redraw)
     }
 }
 
+/**
+ * @brief Updates the button position.
+ *
+ * @param newX New X coordinate of the top-left corner.
+ * @param newY New Y coordinate of the top-left corner.
+ */
 void Button::setPosition(int newX, int newY)
 {
     _x = newX;
     _y = newY;
 }
 
+/**
+ * @brief Updates the button dimensions.
+ *
+ * @param newWidth New width in pixels.
+ * @param newHeight New height in pixels.
+ */
 void Button::setSize(int newWidth, int newHeight)
 {
     _width = newWidth;
     _height = newHeight;
 }
 
+/**
+ * @brief Enables or disables the button and optionally redraws.
+ *
+ * @param enabled true to enable, false to disable (grayed out).
+ * @param redraw Whether to immediately redraw the button.
+ */
 void Button::setEnabled(bool enabled, bool redraw)
 {
     _enabled = enabled;
@@ -122,12 +165,25 @@ void Button::setEnabled(bool enabled, bool redraw)
     }
 }
 
+/**
+ * @brief Checks whether the given coordinates fall within the button bounds.
+ *
+ * @param x X coordinate to check.
+ * @param y Y coordinate to check.
+ * @return true if the coordinates are inside the button area.
+ */
 bool Button::isInBounds(uint16_t x, uint16_t y) const
 {
     return (x >= _x && x <= _x + _width &&
             y >= _y && y <= _y + _height);
 }
 
+/**
+ * @brief Returns the appropriate colors based on the button's enabled state.
+ *
+ * @param bgColor Reference to receive the background color.
+ * @param textColor Reference to receive the text color.
+ */
 void Button::getDisplayColors(uint16_t &bgColor, uint16_t &textColor) const
 {
     if (_enabled)

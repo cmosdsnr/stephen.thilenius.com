@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\steph\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\" -Include \"*.cpp\",\"*.h\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(pio run:*)",
+      "Bash(git -C \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen\" log --oneline -15 -- 4inDisplay_S3/src/Desk/TabDevices.cpp 4inDisplay_S3/include/Desk/TabDevices.h)",
+      "Bash(git config:*)",
+      "Bash(git:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"void WifiLoop\\\\|void clockLoop\\\\|void loopFtp\" \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/4inDisplay_S3/src/\"*.cpp)",
+      "Bash(xargs cat:*)",
+      "Bash(node:*)",
+      "Bash(wc -l /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.tsx /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/components/**/*.jsx)"
+    ]
+  }
+}

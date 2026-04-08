@@ -157,6 +157,15 @@ export default function ThNavbar() {
                                     <NavDropdown.Item href={"/documentation/backend"}>
                                         <MyFontAwesomeIcon icon={faFileCode} /><span style={{ paddingLeft: "12px" }} >BackEnd</span>
                                     </NavDropdown.Item>
+                                    <NavDropdown.Item href={"/documentation/esp32"}>
+                                        <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >Firmware</span>
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Item href={"/documentation/espServer"}>
+                                        <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >ESP Server</span>
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Item href={"/documentation/sprinklerApp"}>
+                                        <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >Sprinkler App</span>
+                                    </NavDropdown.Item>
                                 </NavDropdown>
 
                                 {pb.authStore.model?.role == "Administrator" &&

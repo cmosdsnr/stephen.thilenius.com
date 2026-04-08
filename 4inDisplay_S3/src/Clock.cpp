@@ -53,15 +53,24 @@ void setupTime()
     printf("⏳ SNTP initialized, waiting for background sync...\n");
 }
 
-char *getLocalTime()
+/**
+ * @brief Writes the current local time into a caller-supplied buffer.
+ *
+ * @param buf Buffer to write into.
+ * @param len Size of buf in bytes (minimum 12).
+ */
+void getLocalTime(char *buf, size_t len)
 {
-    static char str[12];
     time(&timeSinceEpoch);
     localtime_r(&timeSinceEpoch, &timeInfo);
-    strftime(str, 12, "%m/%d %H:%M", &timeInfo);
-    return str;
+    strftime(buf, len, "%m/%d %H:%M", &timeInfo);
 }
 
+/**
+ * @brief Returns the full date and time as a formatted string.
+ *
+ * @return Pointer to a static buffer containing the date/time, or "Not Set" if time has not been synchronized.
+ */
 char *getFullDateTime()
 {
     static char str[64] = "Not Set";
@@ -75,17 +84,33 @@ char *getFullDateTime()
     return str;
 }
 
+/**
+ * @brief Returns the time at which the device last rebooted.
+ *
+ * @return Pointer to a static buffer containing the reboot time string.
+ */
 char *getRebootTime()
 {
     return lastReboot;
 }
 
+/**
+ * @brief Returns the current time as seconds since the Unix epoch.
+ *
+ * @return Current epoch time.
+ */
 time_t getEpoch()
 {
     time(&timeSinceEpoch);
     return timeSinceEpoch;
 }
 
+/**
+ * @brief Periodic clock loop that captures reboot time once NTP syncs.
+ *
+ * Should be called from the main loop. Runs once per second and records
+ * the reboot timestamp after the first successful time synchronization.
+ */
 void clockLoop()
 {
     static unsigned long lastMillis = 0;
@@ -97,7 +122,7 @@ void clockLoop()
     if (!lastRebootFlag && getEpoch() > 1000000000)
     {
         lastRebootFlag = true;
-        strcpy(lastReboot, getLocalTime());
+        getLocalTime(lastReboot, sizeof(lastReboot));
         printf("✅ Time synchronized. Local time: %s\n", getFullDateTime());
         SerialMenu.printMenu(MAIN_MENU);
         sendEvent("START", "Wifi started");

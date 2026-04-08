@@ -1,3 +1,8 @@
+/**
+ * @file SerialCommands.h
+ * @brief Garage serial command declarations.
+ */
+
 #ifndef GARAGE_SERIAL_COMMANDS_H
 #define GARAGE_SERIAL_COMMANDS_H
 

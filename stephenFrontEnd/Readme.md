@@ -1,13 +1,43 @@
-# frontend documentation - Readme.md
+React 18 + Vite + TypeScript frontend application for the stephen.thilenius.com personal web infrastructure. 
 
-- frontend uses react and vite 1
-- locally compiled with `yarn build` and `Yarn dev`
-- deploy with go.bat "optional tag": builds and robocopies to static directory on buddbliss
-  
-## use yarn docs:generate to generate and deploy to server 
+## Overview
+This application serves as the main web interface for various personal infrastructure monitoring and visualizations, including:
+- Photo galleries
+- Advanced data visualizations and charts
+- IoT device status and metrics (Power, Sprinkler, Coffee, etc.)
 
-Read documents at /documents/frontend or backend
+## Minimum Requirements
+- Node.js (v18+ recommended)
+- Yarn 4.x (Package Manager)
 
-## use 'npx knip' to check for unused files
+## Tech Stack
+- **Framework:** React 18
+- **Build Tool:** Vite 5
+- **Languages:** TypeScript / JavaScript (ESM)
+- **UI & Styling:** Bootstrap 5, Material-UI (MUI), Emotion, FontAwesome
+- **Charts & Data Viz:** Chart.js, AG Charts, React Charts
+- **Backend / DB Integration:** Firebase, PocketBase
+- **Routing:** React Router v6
+- **Forms & Validation:** React Hook Form, Yup
+- **WebSockets:** react-use-websocket for real-time ESP32 / Backend device updates
+- **Computer Vision:** OpenCV.js, face-api.js 
 
-problems: none at the moment
+## Scripts & Running
+Locally compiled and run using Yarn:
+
+- **`yarn dev`**: Starts the local Vite development server on port 5174.
+- **`yarn build`**: Compiles the application for production.
+- **`yarn preview`**: Locally previews the production build.
+
+## Deployment
+- **`go.bat ["optional tag"]`**: Builds the project and uses Robocopy to deploy the compiled static assets to the `buddbliss` static directory.
+
+## Documentation
+- **`yarn docs:generate`**: Uses TypeDoc to generate API and structural documentation, then deploys it to the server (`copy-docs.bat`).
+- Read generated documentation at `/documentation/frontend`, `/documentation/backend`, or `/documentation/esp32`.
+
+## Maintenance
+- Run `npx knip` to analyze the workspace and check for unused files, dependencies, and exports.
+
+## Known Issues / Problems
+- None at the moment.

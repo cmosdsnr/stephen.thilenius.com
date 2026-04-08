@@ -196,8 +196,13 @@ public:
             return false;
     }
 
+    /** @brief True while a connection attempt is in progress. */
+    bool isConnecting() const { return connecting; }
+    /** @brief True when the device has fallen back to AP mode. */
+    bool isApMode() const { return _apMode; }
+
 private:
-    bool networksChanged = false, scanning = false, connecting = false;
+    bool networksChanged = false, scanning = false, connecting = false, _apMode = false;
     unsigned long connectStartTime = 0;
     unsigned long scanFailTime = 0;
     uint8_t count = 0;

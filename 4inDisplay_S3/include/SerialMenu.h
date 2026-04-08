@@ -87,6 +87,9 @@ constexpr MenuItem menu1[] = {{'0', "Main menu", 0, nullptr},
 #ifdef DESK
 #include "Desk/SerialCommands.h"
 #endif
+#ifdef COFFEE
+#include "Coffee/SerialCommands.h"
+#endif
 #ifdef POWERMETER
 #include "Power/SerialCommands.h"
 #endif

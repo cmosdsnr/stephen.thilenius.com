@@ -49,7 +49,6 @@
 TabGarage::TabGarage(TFT_eSPI *tft) : Tab()
 {
     name = "Garage";
-    bgColor = 0xd7fb;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -123,6 +122,12 @@ void TabGarage::loop()
     }
 }
 
+/**
+ * @brief Draw the full garage UI screen.
+ *
+ * Renders light and power buttons, lock icons, the motion-timeout
+ * progress bar, and the door open/closed indicator.
+ */
 void TabGarage::draw()
 {
     changed = false;
@@ -179,6 +184,16 @@ void TabGarage::draw()
     }
 }
 
+/**
+ * @brief Handle a touch event on the garage tab.
+ *
+ * Maps the touch coordinates to light, power, lock, and door
+ * buttons and triggers the corresponding action.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the previous touch (debounce).
+ */
 void TabGarage::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     //! screen has been tapped at (x,y)

@@ -50,14 +50,32 @@ Tabs::Tabs(TFT_eSPI *tft, Networks *wifiNetworks)
     tab[POWERMETER_TAB] = new TabPowerMeter(_tft);
 #endif
 
-    _tft->setTextFont(2);
+    // Try font 4 first; fall back to font 2 if padding would be too tight
+    _tft->setTextFont(4);
     int totalNameWidth = 0;
     for (uint8_t i = 0; i < _tabCount; i++)
     {
         tab[i]->nameWidth = _tft->textWidth(tab[i]->name.c_str());
+        tab[i]->bgColor = rgbTo565(TAB_COLORS[i % TAB_COLOR_COUNT]);
         totalNameWidth += tab[i]->nameWidth;
     }
     _padding = (_tft->width() - totalNameWidth - (_tabCount - 1) * SPACING) / (2 * _tabCount);
+    if (_padding > 4)
+    {
+        _headerFont = 4;
+    }
+    else
+    {
+        _headerFont = 2;
+        _tft->setTextFont(2);
+        totalNameWidth = 0;
+        for (uint8_t i = 0; i < _tabCount; i++)
+        {
+            tab[i]->nameWidth = _tft->textWidth(tab[i]->name.c_str());
+            totalNameWidth += tab[i]->nameWidth;
+        }
+        _padding = (_tft->width() - totalNameWidth - (_tabCount - 1) * SPACING) / (2 * _tabCount);
+    }
 
     //! draw tab 0
     _currentTab = 0;
@@ -118,12 +136,12 @@ void Tabs::initializeVariables()
 void Tabs::drawTabsHeader()
 {
     uint16_t x = 0;
-    _tft->setTextFont(2);
+    _tft->setTextFont(_headerFont);
     _tft->setTextDatum(ML_DATUM);
     for (uint8_t i = 0; i < _tabCount; i++)
     {
-        _tft->fillRoundRect(x, 0, tab[i]->nameWidth + 2 * _padding, TAB_H, CORNER_RADIUS, _currentTab == i ? tab[i]->bgColor : TFT_LIGHTGREY);
-        _tft->setTextColor(_currentTab == i ? TFT_BLACK : TFT_WHITE);
+        _tft->fillRoundRect(x, 0, tab[i]->nameWidth + 2 * _padding, TAB_H, CORNER_RADIUS, tab[i]->bgColor);
+        _tft->setTextColor(_currentTab == i ? TFT_BLACK : TFT_DARKGREY);
         int16_t w = _tft->textWidth(tab[i]->name);
         _tft->drawString(tab[i]->name, x + _padding, (TAB_H - CORNER_RADIUS) / 2);
 
@@ -131,6 +149,16 @@ void Tabs::drawTabsHeader()
     }
 }
 
+/**
+ * @brief Handles touch input on the tab header bar.
+ *
+ * Determines which tab was tapped and switches to it if different
+ * from the current tab.
+ *
+ * @param x Touch X coordinate
+ * @param y Touch Y coordinate
+ * @param lastClick Milliseconds since the last touch event
+ */
 void Tabs::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     uint8_t c = _tabCount - 1;
@@ -170,6 +198,9 @@ void Tabs::handle(uint16_t x, uint16_t y, uint32_t lastClick)
     }
 }
 
+/**
+ * @brief Destroys the Tabs object and frees allocated tab memory.
+ */
 //! Add destructor to clean up memory
 Tabs::~Tabs()
 {

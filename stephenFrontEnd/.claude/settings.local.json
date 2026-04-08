@@ -28,7 +28,12 @@
       "Bash(git -C \"c:\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\sprinklerApp\" status)",
       "Bash(rm -rf \"c:\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\stephenFrontEnd\\\\.git\")",
       "Bash(rm -rf \"c:\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\stephenBackEnd\\\\.git\")",
-      "Bash(rm -rf \"c:\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\sprinklerApp\\\\.git\")"
+      "Bash(rm -rf \"c:\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\sprinklerApp\\\\.git\")",
+      "Bash(grep -r \"dayMap\\\\|updateDay\" \"C:\\\\Users\\\\steph\\\\Git\\\\web\\\\buddStServer\\\\thilenius.com\\\\Stephen\\\\sprinklerApp\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\")",
+      "Bash(rm:*)",
+      "Bash(git -C \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen\" remote -v)",
+      "Bash(git -C \"C:/Users/steph/Git/web/buddStServer\" remote -v)",
+      "Bash(git -C \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen\" rev-parse --show-toplevel)"
     ]
   }
 }

@@ -17,11 +17,20 @@
 AsyncWebSocket ws("/ws");
 AsyncWebSocketClient *currentClient = NULL;
 
+static String fragmentBuffer; ///< Buffer for assembling fragmented WebSocket frames.
+static constexpr size_t WS_MAX_MSG_LEN = 4096; ///< Maximum allowed incoming message size.
+
 /**
  * @brief Handles incoming WebSocket JSON messages.
+ *
+ * Reassembles fragmented frames, deserializes the JSON payload,
+ * and routes the message to the appropriate handler based on the socket code.
+ *
+ * @param arg Frame metadata (cast to AwsFrameInfo)
+ * @param data Raw message data
+ * @param len Length of the data in bytes
+ * @param client The WebSocket client that sent the message
  */
-static String fragmentBuffer;
-
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocketClient *client)
 {
     AwsFrameInfo *info = (AwsFrameInfo *)arg;
@@ -30,6 +39,14 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocket
 
     if (info->index == 0)
         fragmentBuffer = "";
+
+    if (fragmentBuffer.length() + len > WS_MAX_MSG_LEN)
+    {
+        Serial0.printf("WS message too large (%u bytes), dropping\n",
+                       (unsigned)(fragmentBuffer.length() + len));
+        fragmentBuffer = "";
+        return;
+    }
 
     fragmentBuffer.concat((char *)data, len);
 
@@ -101,6 +118,18 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocket
     fragmentBuffer = "";
 }
 
+/**
+ * @brief WebSocket event callback.
+ *
+ * Dispatches connect, disconnect, and data events from the WebSocket server.
+ *
+ * @param server The WebSocket server instance
+ * @param client The client that triggered the event
+ * @param type The event type (connect, disconnect, data, pong, error)
+ * @param arg Event-specific argument (frame info for data events)
+ * @param data Payload data (for data events)
+ * @param len Length of the payload data
+ */
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len)
 {
@@ -122,6 +151,11 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     }
 }
 
+/**
+ * @brief Checks if any WebSocket clients are currently connected.
+ *
+ * @return true if at least one client is connected, false otherwise.
+ */
 bool ClientsAreConnected()
 {
     if (ws.count() > 0)
@@ -130,6 +164,11 @@ bool ClientsAreConnected()
         return false;
 }
 
+/**
+ * @brief Initializes the WebSocket server and registers the event handler.
+ *
+ * @param server The async web server to attach the WebSocket handler to
+ */
 void initWebSocket(AsyncWebServer *server)
 {
     ws.onEvent(onEvent);

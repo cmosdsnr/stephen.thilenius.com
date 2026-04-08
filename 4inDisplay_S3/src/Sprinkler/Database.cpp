@@ -17,6 +17,12 @@
 //! pocketbase is used to track other ESPs
 //!**************************************
 
+/**
+ * @brief URL-encodes a string for use in HTTP query parameters.
+ *
+ * @param str The input string to encode.
+ * @return String The percent-encoded string.
+ */
 String urlencode(String str)
 {
     String encodedString = "";
@@ -96,6 +102,12 @@ const char *test_root_ca =
 
 String d;
 
+/**
+ * @brief Retries uploading schedule data to PocketBase via HTTPS POST.
+ *
+ * @param localShortTime Time string for the record.
+ * @return true on successful upload, false on connection or WiFi failure.
+ */
 bool retryUpdatePocketBase(char *localShortTime)
 {
     if (WiFi.status() == WL_CONNECTED)
@@ -149,6 +161,14 @@ bool retryUpdatePocketBase(char *localShortTime)
     }
 }
 
+/**
+ * @brief Builds and uploads hourly schedule data to PocketBase.
+ *
+ * @param localShortTime Time string for the record.
+ * @param activeHour Active hour index used as the record ID base.
+ * @param hour 6x60 matrix of channel durations per minute.
+ * @return true on successful upload, false otherwise.
+ */
 bool updatePocketBase(char *localShortTime, int32_t activeHour, double hour[6][60])
 {
     d = "{\"id\":\"";
@@ -187,6 +207,11 @@ bool updatePocketBase(char *localShortTime, int32_t activeHour, double hour[6][6
 String recordId = ""; //!< keeps track of this esp's pocketbase record id
 String token = "";
 
+/**
+ * @brief Checks if WiFi is connected and logs an event if not.
+ *
+ * @return true if WiFi is connected, false otherwise.
+ */
 bool isConnected()
 {
     if (WiFi.status() == WL_CONNECTED)
@@ -201,6 +226,11 @@ bool isConnected()
     }
 }
 
+/**
+ * @brief Queries PocketBase to check if a record with this device's name exists.
+ *
+ * @return true if the name record exists, false otherwise.
+ */
 bool doesNameExist()
 {
     if (isConnected())
@@ -251,6 +281,11 @@ bool doesNameExist()
     }
 }
 
+/**
+ * @brief Creates a new name record in PocketBase for this device.
+ *
+ * @return true if the record was created successfully, false otherwise.
+ */
 bool createNameRecord()
 {
     if (isConnected())
@@ -302,6 +337,11 @@ bool createNameRecord()
     }
 }
 
+/**
+ * @brief Updates the existing name record in PocketBase for this device.
+ *
+ * @return true if the record was updated successfully, false otherwise.
+ */
 bool updateNameRecord()
 {
     if (isConnected())
@@ -353,6 +393,9 @@ bool updateNameRecord()
     }
 }
 
+/**
+ * @brief Ensures this device has a record in PocketBase, creating one if needed.
+ */
 void getRecordId()
 {
     if (isConnected())

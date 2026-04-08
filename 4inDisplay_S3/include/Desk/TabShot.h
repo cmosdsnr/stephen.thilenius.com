@@ -7,8 +7,10 @@
 /**
  * @brief Shot schedule UI for Semaglutide tracking.
  *
+ * Display only — all schedule logic (persistence, tracking, beeping) lives in Shot.
+ *
  * Layout:
- * - Top: Date adjusters (+/- days)
+ * - Top: Date adjusters (+/- days/hours/minutes)
  * - Middle: Progress slider showing time until next shot
  * - Bottom: Reset button to log a new shot
  * - Text: Displays the calculated next shot date/time
@@ -27,30 +29,23 @@ public:
 
 private:
     TFT_eSPI *_tft;
-    TFT_eSprite *_knob; // Sprite for the draggable slider knob
-    Slider *_s1;        // Progress bar controller
-    time_t _next;       // Timestamp for the next scheduled shot
+    TFT_eSprite *_knob;
+    Slider *_s1;
 
-    // Updates the progress bar visual state
+    // Display cache — mirrors shot->getNext(), 0 forces a full redraw on next loop()
+    time_t _next;
+
     void redrawBar(int16_t w);
     void shortenBar(int16_t lastWidth, int16_t newWidth);
     void detectDrag();
 
-    // Geometry for the reset button
     uint16_t _buttonY, _buttonWidth, _buttonX, _buttonHeight;
-    int16_t _lastW = 0, _lastM = 0; // State tracking for slider updates
+    int16_t _lastW = 0, _lastM = 0;
 
-    // UI Component rendering
     void drawResetButton();
     void drawAdjusters();
-
-    /** @brief Formats and displays the target date/time strings. */
     void drawTime();
-
-    // Helper to draw +/- adjustment buttons
     void drawAdjuster(int16_t x, int16_t y, const char *label, int val);
-
-    // Hit testing for top adjuster buttons
     void checkAdjusters(uint16_t px, uint16_t py);
 };
 

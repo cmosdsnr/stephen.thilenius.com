@@ -29,6 +29,14 @@ void updateSuspend();
 
 std::vector<SuspendItem> suspendList;
 
+/**
+ * @brief Checks whether a specific scheduled event is suspended.
+ *
+ * @param ch Channel index.
+ * @param day Days since boundary (0-13).
+ * @param startTime Start time in minutes into the day.
+ * @return true if the event is suspended, false otherwise.
+ */
 bool isSuspended(uint8_t ch, uint8_t day, uint16_t startTime)
 {
     for (const SuspendItem &s : suspendList)
@@ -41,6 +49,11 @@ bool isSuspended(uint8_t ch, uint8_t day, uint16_t startTime)
     return false;
 }
 
+/**
+ * @brief Shifts suspension dates forward when the 14-day boundary advances.
+ *
+ * Entries from the past cycle are removed.
+ */
 void advanceSuspendBoundary()
 {
     for (SuspendItem &s : suspendList)
@@ -111,11 +124,17 @@ void handleMessage()
     sendEvent("handleMessage", ("got message: " + doc.as<String>()).c_str());
 }
 
+/**
+ * @brief Clears all entries from the schedule vector.
+ */
 void clearSchedule()
 {
     schedule.clear();
 }
 
+/**
+ * @brief Processes a rules update message, rebuilds the schedule, and saves to storage.
+ */
 void updateRules()
 {
     printf("Updating rules...\n");
@@ -149,6 +168,9 @@ void updateRules()
     ws.textAll(doc.as<String>());
 }
 
+/**
+ * @brief Processes a suspend/unsuspend request from the WebSocket client.
+ */
 void updateSuspend()
 {
     int8_t add = doc["add"].as<int8_t>();
@@ -192,6 +214,9 @@ void updateSuspend()
     ws.textAll(doc.as<String>());
 }
 
+/**
+ * @brief Handles an update-items request to manually activate a channel.
+ */
 void updateRequest()
 {
     JsonObject changes = doc["changes"];
@@ -216,10 +241,15 @@ void updateRequest()
     }
 }
 
+/**
+ * @brief Adds system time and boundary variables to the JSON document.
+ */
 void addVariables()
 {
     JsonObject variables = doc.createNestedObject("variables");
-    variables["localTime"] = getLocalTime();
+    char localTimeBuf[12];
+    getLocalTime(localTimeBuf, sizeof(localTimeBuf));
+    variables["localTime"] = localTimeBuf;
     variables["epoch"] = getEpoch();
     variables["boundary"] = getBoundary();
     variables["daysSinceBoundary"] = getDaysSinceBoundary();
@@ -235,8 +265,7 @@ void addVariables()
  *          - Suspension status
  *          - Next watering times
  *          - Global settings per day
- *          Then serializes it to the provided string buffer.
- * @param str The output buffer to store the JSON string (must be large enough, e.g. 4096 bytes).
+ *          Then populates the global JSON document for transmission.
  */
 void fillAllData()
 {
@@ -270,7 +299,6 @@ void fillAllData()
     }
 }
 
-/**********************************************************************************/
 /**
  * @brief Respond to an HTTP request with the full data set.
  * @details This function allocates a large buffer on the heap to serialize the
@@ -283,10 +311,6 @@ void loadData(AsyncWebServerRequest *request)
     fillAllData();
     AsyncWebServerResponse *response = request->beginResponse(200, "text/html", doc.as<String>().c_str());
     response->addHeader("Connection", "close");
-    /**
-     * @brief Handle module-specific WebSocket messages.
-     * @details Processes commands like UPDATE_CHANNEL, SEQUENCE_CHANNEL, GLOBAL_UPDATE, etc.
-     */
     request->send(response);
 }
 
@@ -302,6 +326,9 @@ void allDataRequest(uint32_t id)
     ws.text(id, doc.as<String>());
 }
 
+/**
+ * @brief Broadcasts current system variables to all connected WebSocket clients.
+ */
 void sendVariables()
 {
     doc.clear();
@@ -312,6 +339,12 @@ void sendVariables()
 
 int runningChannel = -1;
 
+/**
+ * @brief Broadcasts a channel on/off state change to all WebSocket clients.
+ *
+ * @param channel Channel index that changed.
+ * @param on true if the channel was activated, false if deactivated.
+ */
 void sendOnOff(uint8_t channel, bool on)
 {
     printf("sendOnOff: channel %d, on: %s\n", channel, on ? "on" : "off");

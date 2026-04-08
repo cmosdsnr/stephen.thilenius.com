@@ -26,6 +26,9 @@ void checkForDateChange();
  * @brief Evaluate schedule for the given day and time.
  */
 void checkSchedule();
+/**
+ * @brief Stops any active manual channel override.
+ */
 void stopManual();
 
 #endif

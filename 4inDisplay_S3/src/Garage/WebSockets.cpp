@@ -19,6 +19,11 @@ const char *vNames[NUM_VARS] = {"local Time", "epoch"};
 
 /**********************************************************************************/
 
+/**
+ * @brief Add garage-specific variables to a JSON payload.
+ *
+ * @param variables JSON object to populate with project variables.
+ */
 void addProjectVariables(JsonObject variables)
 {
 }
@@ -38,6 +43,12 @@ void addProjectVariables(JsonObject variables)
 // }
 
 /**********************************************************************************/
+
+/**
+ * @brief Handle an incoming WebSocket message for the Garage module.
+ *
+ * Responds with a CODE_READ payload.
+ */
 void handleMessage()
 {
     doc["code"] = CODE_READ;

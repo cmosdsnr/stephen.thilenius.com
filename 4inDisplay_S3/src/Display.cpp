@@ -51,6 +51,11 @@ void setupDisplay()
     tft.setTextSize(1);
 }
 
+/**
+ * @brief Initializes the tab system for the UI.
+ *
+ * Creates a new Tabs instance with the TFT display and WiFi networks.
+ */
 void setupTabs()
 {
     tabs = new Tabs(&tft, wifiNetworks);
@@ -65,6 +70,14 @@ void setupTabs()
 //! Repeat calibration if you change the screen rotation.
 #define REPEAT_CAL false
 
+/**
+ * @brief Runs the touch screen calibration routine.
+ *
+ * Loads calibration data from LittleFS if available, otherwise
+ * performs interactive calibration and saves the results.
+ *
+ * @param force If true, forces recalibration even if saved data exists.
+ */
 void touch_calibrate(bool force)
 {
     uint16_t calData[7];

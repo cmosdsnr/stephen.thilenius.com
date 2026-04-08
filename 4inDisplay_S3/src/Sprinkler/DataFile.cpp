@@ -8,6 +8,11 @@
 #include "Report.h"
 #include "Sprinkler/Structs.h"
 
+/**
+ * @brief Loads the sprinkler schedule from /data.bin on LittleFS.
+ *
+ * @return true if the file was read and parsed successfully, false otherwise.
+ */
 bool loadDataFile()
 {
     if (!LittleFS.exists("/data.bin"))
@@ -50,6 +55,11 @@ bool loadDataFile()
     return true;
 }
 
+/**
+ * @brief Saves the sprinkler schedule to /data.bin on LittleFS.
+ *
+ * @return true if the file was written successfully, false otherwise.
+ */
 bool saveDataFile()
 {
     fs::File f = LittleFS.open("/data.bin", "w");

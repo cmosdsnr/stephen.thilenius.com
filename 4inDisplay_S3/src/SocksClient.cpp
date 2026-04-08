@@ -7,7 +7,6 @@
 
 /**
  * @brief Attempts to connect to SOCKS proxy (Stub).
- * @return void
  */
 void trySocks()
 {

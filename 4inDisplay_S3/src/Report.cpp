@@ -5,6 +5,9 @@
 
 #include "Report.h"
 
+/**
+ * @brief Construct a new ReportClass instance with default settings.
+ */
 ReportClass::ReportClass() {}
 
 /**

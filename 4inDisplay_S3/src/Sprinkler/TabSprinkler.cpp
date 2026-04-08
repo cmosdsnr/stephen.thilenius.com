@@ -47,7 +47,6 @@
 TabSprinkler::TabSprinkler(TFT_eSPI *tft) : Tab()
 {
     name = "Sprinkler";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -94,6 +93,15 @@ void TabSprinkler::draw()
     _tft->setTextColor(TFT_BLACK); //!< Reset
 }
 
+/**
+ * @brief Handles touch events on the sprinkler control tab.
+ *
+ * Toggles the tapped channel pin on/off and turns off all other channels.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the last touch event.
+ */
 void TabSprinkler::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     if (lastClick > 500)
@@ -147,6 +155,9 @@ void TabSprinkler::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 }
 static uint8_t lastPct = 101;
 
+/**
+ * @brief Periodic loop that redraws the tab when marked as changed.
+ */
 void TabSprinkler::loop()
 {
     if (changed)

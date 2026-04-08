@@ -378,6 +378,13 @@ void handleSsidCommand(char command, char *data, AsyncWebSocketClient *client = 
     }
 }
 
+/**
+ * @brief Routes a command to the appropriate menu handler based on the active menu.
+ *
+ * @param command Command character.
+ * @param data Optional data string.
+ * @param menuSelector The currently active menu (MAIN_MENU, SSID_MENU, or SPEC_MENU).
+ */
 void handleWebSerialCommands(uint8_t command, char *data, uint8_t menuSelector)
 {
     if (menuSelector == MAIN_MENU)

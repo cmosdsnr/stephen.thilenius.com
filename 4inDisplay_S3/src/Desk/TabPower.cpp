@@ -1,5 +1,10 @@
 #ifdef DESK
 
+/**
+ * @file TabPower.cpp
+ * @brief Power meter tab UI with 24-hour line chart and channel toggle buttons.
+ */
+
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
@@ -21,6 +26,7 @@ using PsramJsonDoc = BasicJsonDocument<PsramAllocator>;
 #include "Report.h"
 #include "Buzzer.h"
 #include "Desk/EpromData.h"
+#include "SPIMutex.h"
 
 // ── Chart geometry ──────────────────────────────────────────────────────────
 #define CHART_X1 30                   // left edge (room for y-axis labels)
@@ -49,10 +55,14 @@ using PsramJsonDoc = BasicJsonDocument<PsramAllocator>;
 
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Construct the Power tab and load persisted channel selections.
+ *
+ * @param tft Pointer to the TFT display driver.
+ */
 TabPower::TabPower(TFT_eSPI *tft) : Tab()
 {
     name = "Power";
-    bgColor = 0xd7ff; // light blue-white, matches other tabs
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -63,6 +73,9 @@ TabPower::TabPower(TFT_eSPI *tft) : Tab()
 
 // ── draw ────────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Draw the full Power tab: chart area, channel buttons, and refresh button.
+ */
 void TabPower::draw()
 {
     changed = false;
@@ -75,6 +88,9 @@ void TabPower::draw()
     drawRefreshButton();
 }
 
+/**
+ * @brief Render the line chart with gridlines, axis labels, and polylines for active channels.
+ */
 void TabPower::drawChart()
 {
     // Border
@@ -162,6 +178,11 @@ void TabPower::drawChart()
     }
 }
 
+/**
+ * @brief Draw a single channel toggle button.
+ *
+ * @param ch Channel index (0 to PM_NUM_CH-1).
+ */
 void TabPower::drawChannelButton(int ch)
 {
     int bx = ch * (CH_BTN_W + CH_BTN_GAP);
@@ -175,6 +196,9 @@ void TabPower::drawChannelButton(int ch)
     _tft->printf("ch%d", ch);
 }
 
+/**
+ * @brief Draw the Refresh button, greyed out while a fetch is in progress.
+ */
 void TabPower::drawRefreshButton()
 {
     uint16_t fill = fetching ? (uint16_t)TFT_DARKGREY : (uint16_t)TFT_NAVY;
@@ -188,6 +212,9 @@ void TabPower::drawRefreshButton()
 
 // ── loop ────────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Periodic update loop; auto-fetches every 60 seconds and redraws on new data.
+ */
 void TabPower::loop()
 {
     // Auto-fetch on first view and every 60 s
@@ -203,6 +230,13 @@ void TabPower::loop()
 
 // ── handle ──────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Handle touch input on channel toggle and refresh buttons.
+ *
+ * @param x Touch X coordinate.
+ * @param y Touch Y coordinate.
+ * @param lastClick Milliseconds since the previous touch event.
+ */
 void TabPower::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     if (lastClick < 300)
@@ -241,6 +275,9 @@ void TabPower::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 
 // ── fetch ────────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Launch a background FreeRTOS task to fetch 24-hour power data.
+ */
 void TabPower::startFetch()
 {
     if (fetching)
@@ -251,6 +288,11 @@ void TabPower::startFetch()
     xTaskCreate(fetchTask, "pwrFetch", 16384, this, 1, nullptr);
 }
 
+/**
+ * @brief FreeRTOS task that performs the HTTPS GET, parses JSON, and downsamples data.
+ *
+ * @param param Pointer to the owning TabPower instance.
+ */
 void TabPower::fetchTask(void *param)
 {
     TabPower *self = static_cast<TabPower *>(param);
@@ -258,6 +300,7 @@ void TabPower::fetchTask(void *param)
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
+    xSemaphoreTake(httpsGuard, portMAX_DELAY);
     http.useHTTP10(true);
     http.begin(client, PM_URL);
     http.setTimeout(20000);
@@ -365,6 +408,7 @@ void TabPower::fetchTask(void *param)
     }
 
     http.end();
+    xSemaphoreGive(httpsGuard);
     self->fetching = false;
     vTaskDelete(nullptr);
 }

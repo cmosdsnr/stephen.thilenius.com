@@ -1,7 +1,7 @@
 #ifndef BUZZER_H
 #define BUZZER_H
 
-extern uint32_t buzzerOn;
+extern volatile uint32_t buzzerOn;
 extern uint16_t buzzerFreq;
 
 /**
@@ -38,5 +38,18 @@ void buzzerLoop();
  * @return void
  */
 void playSong();
+
+/**
+ * @brief Starts the ascending 3-note shot reminder chime (non-blocking).
+ *        Call buzzerLoop() from the main loop to advance the sequence.
+ * @return void
+ */
+void startShotReminder();
+
+/**
+ * @brief Plays the Lone Ranger (William Tell Overture finale) gallop (non-blocking).
+ * @return void
+ */
+void playLoneRanger();
 
 #endif

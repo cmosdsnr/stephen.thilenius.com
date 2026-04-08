@@ -22,6 +22,14 @@
 #define CENTER_X 40 + RADIUS
 #define CENTER_Y 320 - 30 - RADIUS
 
+/**
+ * @brief Resolves a MAC address from an IP address using the ARP cache.
+ *
+ * Forces ARP resolution via a brief TCP connect if the entry is not cached.
+ *
+ * @param targetIp The IP address to look up.
+ * @return Pointer to a 6-byte MAC address array, or NULL on failure.
+ */
 uint8_t *getMacFromIp(IPAddress targetIp)
 {
     //! 1. Safety check: Network Interface
@@ -82,7 +90,12 @@ uint8_t *getMacFromIp(IPAddress targetIp)
     return NULL;
 }
 
-//! Quick check if host responds on port 80 (just TCP connect, no HTTP exchange)
+/**
+ * @brief Checks if a host responds on port 80 via a quick TCP connect.
+ *
+ * @param targetIp The IP address to probe.
+ * @return true if the host accepted the TCP connection, false otherwise.
+ */
 static bool isHostResponsive(const IPAddress &targetIp)
 {
     WiFiClient client;
@@ -93,11 +106,16 @@ static bool isHostResponsive(const IPAddress &targetIp)
     //! return false;
 }
 
+/**
+ * @brief Constructs the Gliderport status tab.
+ *
+ * @param tft Pointer to the TFT display driver.
+ * @param wifiNetworks Pointer to the network manager.
+ */
 TabStatus::TabStatus(TFT_eSPI *tft, Networks *wifiNetworks) : Tab()
 {
 
     name = "Status";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -116,6 +134,9 @@ TabStatus::TabStatus(TFT_eSPI *tft, Networks *wifiNetworks) : Tab()
     changed = true;
 }
 
+/**
+ * @brief Initializes camera MAC and IP entries in EEPROM with defaults.
+ */
 void TabStatus::initialize()
 {
     ip = IPAddress(192, 168, 88, 123);
@@ -129,6 +150,9 @@ void TabStatus::initialize()
     camera2Ip = loadCameraIP(2);
 }
 
+/**
+ * @brief Periodic loop that refreshes WiFi info and camera connectivity status.
+ */
 void TabStatus::loop()
 {
     static uint64_t lastWiFi = millis();
@@ -185,6 +209,9 @@ void TabStatus::loop()
     }
 }
 
+/**
+ * @brief Draws the status tab showing WiFi info and camera status.
+ */
 void TabStatus::draw()
 {
     changed = false;
@@ -259,6 +286,13 @@ void TabStatus::draw()
     _tft->drawString(String(macStr), 190, TAB_H + LINE_HEIGHT * 7);
 }
 
+/**
+ * @brief Handles touch events on the status tab.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the last touch event.
+ */
 void TabStatus::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     quickBeep();

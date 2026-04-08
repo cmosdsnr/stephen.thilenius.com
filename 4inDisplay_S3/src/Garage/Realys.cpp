@@ -9,6 +9,16 @@
 #include "Tabs.h"
 #include "Garage/TabGarage.h"
 
+/**
+ * @brief Construct a new Relays controller.
+ *
+ * Configures the motion sensor input and relay output pins,
+ * and sets default relay states.
+ *
+ * @param motionPin GPIO pin for the motion sensor input.
+ * @param lightsRelay GPIO pin for the lights relay output.
+ * @param powerRelay GPIO pin for the power relay output.
+ */
 Relays::Relays(uint8_t motionPin, uint8_t lightsRelay, uint8_t powerRelay)
 {
     _motionPin = motionPin;
@@ -28,6 +38,12 @@ Relays::Relays(uint8_t motionPin, uint8_t lightsRelay, uint8_t powerRelay)
     power = true;
 }
 
+/**
+ * @brief Poll the motion sensor and update relay states.
+ *
+ * Turns lights and power on when motion is detected.
+ * Turns them off after 5 minutes of no motion, unless forced.
+ */
 void Relays::Check()
 {
     mVal = digitalRead(_motionPin);
@@ -53,6 +69,15 @@ void Relays::Check()
     }
 }
 
+/**
+ * @brief Get the remaining motion-timeout as a pixel width.
+ *
+ * Maps the fraction of the 5-minute timeout that remains
+ * onto a pixel width for drawing a progress bar.
+ *
+ * @param width Maximum bar width in pixels.
+ * @return Scaled pixel width representing the remaining time.
+ */
 uint16_t Relays::GetRemainingPct(int16_t width)
 {
     if (!lights)
@@ -63,6 +88,9 @@ uint16_t Relays::GetRemainingPct(int16_t width)
     return (uint16_t)(pct * width);
 }
 
+/**
+ * @brief Turn the lights relay on and refresh the UI.
+ */
 void Relays::LightsOn()
 {
     digitalWrite(_lightsRelay, HIGH);
@@ -74,6 +102,9 @@ void Relays::LightsOn()
         motionState = true;
     }
 }
+/**
+ * @brief Turn the lights relay off and refresh the UI.
+ */
 void Relays::LightsOff()
 {
     digitalWrite(_lightsRelay, LOW);
@@ -84,6 +115,9 @@ void Relays::LightsOff()
         blockMotion = millis();
     }
 }
+/**
+ * @brief Toggle the lights relay and refresh the UI.
+ */
 void Relays::LightsToggle()
 {
     lights = !lights;
@@ -99,6 +133,9 @@ void Relays::LightsToggle()
         LightsOff();
     }
 }
+/**
+ * @brief Turn the power relay on and refresh the UI.
+ */
 void Relays::PowerOn()
 {
     digitalWrite(_powerRelay, HIGH);
@@ -110,6 +147,9 @@ void Relays::PowerOn()
         PowerOn();
     }
 }
+/**
+ * @brief Turn the power relay off and refresh the UI.
+ */
 void Relays::PowerOff()
 {
     digitalWrite(_powerRelay, HIGH);
@@ -121,6 +161,9 @@ void Relays::PowerOff()
         blockMotion = millis();
     }
 }
+/**
+ * @brief Toggle the power relay and refresh the UI.
+ */
 void Relays::PowerToggle()
 {
     digitalWrite(_powerRelay, !digitalRead(_powerRelay));
@@ -137,6 +180,11 @@ void Relays::PowerToggle()
     }
 }
 
+/**
+ * @brief Toggle forced-lights mode and refresh the UI.
+ *
+ * When forced, the lights stay on regardless of motion timeout.
+ */
 void Relays::ToggleForceLights()
 {
     forceLights = !forceLights;
@@ -144,6 +192,11 @@ void Relays::ToggleForceLights()
     lastButtonPress = millis();
     lastMotionHigh = lastButtonPress;
 }
+/**
+ * @brief Toggle forced-power mode and refresh the UI.
+ *
+ * When forced, the power relay stays on regardless of motion timeout.
+ */
 void Relays::ToggleForcePower()
 {
     forcePower = !forcePower;

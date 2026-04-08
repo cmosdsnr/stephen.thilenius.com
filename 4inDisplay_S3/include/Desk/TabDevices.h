@@ -10,7 +10,7 @@ struct DeviceEntry
 {
     String name;
     String ip;
-    String elapsed;
+    long elapsedSecs = -1;
 };
 
 /**

@@ -4,7 +4,7 @@
 #include <time.h>
 
 void clockLoop();
-char *getLocalTime();
+void getLocalTime(char *buf, size_t len);
 char *getRebootTime();
 time_t getEpoch();
 char *getFullDateTime();

@@ -13,6 +13,8 @@
 portMUX_TYPE timerMuxMain = portMUX_INITIALIZER_UNLOCKED;
 //! 50ms timer
 hw_timer_t *timerMain = NULL;
+
+static constexpr uint32_t TIMER_MAIN_INTERVAL_US = 2000; ///< Default tick interval (2ms).
 uint16_t tick = 0;
 bool b = false;
 
@@ -35,7 +37,10 @@ void IRAM_ATTR onTimerMain()
         b = !b;
         buzzerOn--;
         if (!buzzerOn)
+        {
             digitalWrite(BUZZER_PIN, LOW);
+            timerAlarmWrite(timerMain, TIMER_MAIN_INTERVAL_US, true); //!< restore tick timing
+        }
     }
     portEXIT_CRITICAL_ISR(&timerMuxMain);
 }
@@ -66,14 +71,25 @@ void changeIntervalMain(uint32_t us)
     timerAlarmWrite(timerMain, us, true);
 }
 
+/**
+ * @brief Detaches the main timer interrupt.
+ */
 void detachMain()
 {
+    timerDetachInterrupt(timerMain);
 }
 
+/**
+ * @brief Re-attaches the main timer interrupt.
+ */
 void attachMain()
 {
+    timerAttachInterrupt(timerMain, &onTimerMain, true);
 }
 
+/**
+ * @brief Prints debug information about main timer interrupts.
+ */
 void debugInterruptsMain()
 {
 }

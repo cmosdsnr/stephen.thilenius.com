@@ -130,6 +130,11 @@ void sendAllVariables(AsyncWebSocketClient *client)
         return;
 }
 
+/**
+ * @brief Sends SD card information to a WebSocket client.
+ *
+ * @param client Optional specific client to send to. If NULL, broadcasts to all.
+ */
 void sendSDInfo(AsyncWebSocketClient *client)
 {
     if (ws.count() == 0)
@@ -242,6 +247,13 @@ void processPendingClients()
     pendingClients.clear();
 }
 
+/**
+ * @brief Writes a raw data buffer to all connected WebSocket clients as serialized JSON.
+ *
+ * @param buffer Pointer to the data buffer to send
+ * @param len Number of bytes in the buffer
+ * @return Number of bytes written, or 0 if no clients are connected.
+ */
 size_t writeWebSerial(const uint8_t *buffer, size_t len)
 {
     if (ws.count() == 0)

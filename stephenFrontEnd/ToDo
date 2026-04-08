@@ -1,0 +1,24 @@
+  Highest impact, least effort:
+
+  1. Delete Firebase entirely — remove the file, the package, and the keys
+  2. Add route-level code splitting — React.lazy on each route; the games, gallery, and admin sections have no business loading on the home page
+  3. Actually use React Query — replace raw fetch() calls with useQuery; you get loading/error states, caching, background refetch, and deduplication for free
+  4. Consolidate to one chart library — AG Charts is more modern; drop Chart.js and react-charts
+  5. Centralize API endpoints — one api.ts constants file, referenced everywhere
+
+  Medium effort, meaningful improvement:
+
+  6. Migrate .jsx → .tsx — especially the game components; use proper prop interfaces
+  7. Replace console.log with a real error boundary — one <ErrorBoundary> component wrapping routes, plus toast notifications for user-facing errors
+  8. Add loading skeletons — currently most async data just renders nothing while loading
+  9. Kill duplicate games — consolidate to one Wordle implementation
+  10. CSS consolidation — 18 scattered CSS files + Bootstrap + MUI + inline styles. Pick Bootstrap or MUI (not both) and use CSS Modules or a single design-token file
+
+  Nice to have:
+
+  11. React.memo + useCallback on the context consumers — WssContext pushes updates frequently (hardware data); components subscribed to it should be memoized
+  12. Image lazy loading — the gallery in particular; loading="lazy" on <img> is a one-liner improvement
+  13. Service worker / offline shell — the site has enough static content (CV, games) to cache offline
+  14. Migrate to Tailwind — drop the 18 CSS files; utility classes would eliminate the Bootstrap/MUI/inline style collision
+
+  The single highest-ROI change is code splitting + killing Firebase. It would shrink the initial bundle noticeably with a few hours of work.

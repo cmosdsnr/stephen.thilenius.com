@@ -42,6 +42,9 @@ void loadData(AsyncWebServerRequest *request);
  */
 void addProjectVariables(JsonObject variables);
 
+/**
+ * @brief Broadcasts current system variables to all connected WebSocket clients.
+ */
 void sendVariables();
 /**
  * @brief Check whether a specific scheduled event is suspended.
@@ -59,5 +62,11 @@ bool isSuspended(uint8_t ch, uint8_t day, uint16_t startTime);
  */
 void advanceSuspendBoundary();
 
+/**
+ * @brief Broadcasts a channel on/off state change to all WebSocket clients.
+ *
+ * @param channel Channel index that changed.
+ * @param on true if activated, false if deactivated.
+ */
 void sendOnOff(uint8_t channel, bool on);
 #endif

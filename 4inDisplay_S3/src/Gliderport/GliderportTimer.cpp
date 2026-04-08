@@ -42,9 +42,12 @@ bool sawDirectionLow = false;
 bool startup = true;
 uint8_t testPt = 0, testPt1 = 0, testPt2 = 0, testPt3 = 0;
 
-/*************************************/
-//! timer called every 10ms
-/*************************************/
+/**
+ * @brief Timer ISR callback for wind sensor signal filtering.
+ *
+ * Called every 2 ms. Applies hysteresis filtering to the speed and direction
+ * reed-switch inputs and records edge transitions.
+ */
 void IRAM_ATTR onGliderportTimer()
 {
     portENTER_CRITICAL_ISR(&gliderportTimerMux);
@@ -156,6 +159,9 @@ void IRAM_ATTR onGliderportTimer()
     portEXIT_CRITICAL_ISR(&gliderportTimerMux);
 }
 
+/**
+ * @brief Initializes and starts the hardware timer for wind sensor polling.
+ */
 void InitGliderportTimer()
 {
     gliderportTimer = timerBegin(1, 80, true);                       //!< start a timer that is 80MHz/80 = 1MHz

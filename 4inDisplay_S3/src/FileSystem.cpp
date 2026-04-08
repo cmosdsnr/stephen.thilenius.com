@@ -15,10 +15,11 @@ using fs::FS;
 /**
  * @brief Recursively lists files in a directory.
  *
- * @param fs Filesystem reference
- * @param dirname Path to directory
- * @param levels Recursion depth
- * @param str String buffer to append output to
+ * @param fs Filesystem reference.
+ * @param dirname Path to directory.
+ * @param levels Maximum recursion depth.
+ * @param str String buffer to append output to.
+ * @param depth Current indentation depth (defaults to 0).
  */
 void listDir(fs::FS &fs, const char *dirname, uint8_t levels, String &str, uint8_t depth = 0)
 {
@@ -96,6 +97,12 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels, String &str, uint8
     }
 }
 
+/**
+ * @brief Prints the ESP32 partition table to Serial.
+ *
+ * Displays partition types, subtypes, addresses, sizes, and labels
+ * in a formatted table.
+ */
 void printPartitionTable()
 {
     printf("ESP32 Partition table:\n\n");
@@ -116,6 +123,9 @@ void printPartitionTable()
     }
 }
 
+/**
+ * @brief Prints LittleFS directory listing to the report output.
+ */
 void fileSystemInfo()
 {
 
@@ -126,6 +136,13 @@ void fileSystemInfo()
 
 static FileInfo *fsFilesCache = NULL;
 
+/**
+ * @brief Caches the LittleFS root file list into memory.
+ *
+ * Enumerates all files in the LittleFS root directory and stores
+ * their names and sizes. Call once at startup and after any
+ * file upload or delete.
+ */
 void cacheFiles()
 {
     if (fsFilesCache != NULL)
@@ -157,6 +174,15 @@ void cacheFiles()
     fsFilesCache[index].name = "";
 }
 
+/**
+ * @brief Returns the cached LittleFS file list.
+ *
+ * Returns a pointer to the cached array without performing
+ * any filesystem access. If the cache is empty, returns a
+ * single-element array with an empty name sentinel.
+ *
+ * @return Pointer to a null-terminated array of FileInfo structures.
+ */
 FileInfo *getFiles()
 {
     if (fsFilesCache == NULL)
@@ -169,6 +195,13 @@ FileInfo *getFiles()
 
 static FileInfo *sdFilesCache = NULL;
 
+/**
+ * @brief Caches the SD card root file list into memory.
+ *
+ * Enumerates all non-directory files in the SD card root and stores
+ * their names and sizes. Call once at startup before the display
+ * takes over the SPI bus.
+ */
 void cacheSDFiles()
 {
     if (sdFilesCache != NULL)
@@ -210,6 +243,15 @@ void cacheSDFiles()
     sdFilesCache[index].name = "";
 }
 
+/**
+ * @brief Returns the cached SD card file list.
+ *
+ * Returns a pointer to the cached array without performing
+ * any SPI access. If the cache is empty, returns a
+ * single-element array with an empty name sentinel.
+ *
+ * @return Pointer to a null-terminated array of FileInfo structures.
+ */
 FileInfo *getSDFiles()
 {
     if (sdFilesCache == NULL)

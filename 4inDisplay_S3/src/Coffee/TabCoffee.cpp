@@ -47,7 +47,6 @@
 TabCoffee::TabCoffee(TFT_eSPI *tft) : Tab()
 {
     name = "Coffee";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -100,6 +99,16 @@ void TabCoffee::draw()
     }
 }
 
+/**
+ * @brief Handle touch input on the Coffee tab.
+ *
+ * Detects which button (lights, fill, or lock) was pressed based on
+ * touch coordinates and toggles the corresponding relay.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the last touch event.
+ */
 void TabCoffee::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     if (lastClick > 500)
@@ -130,6 +139,12 @@ void TabCoffee::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 }
 static uint8_t lastPct = 101;
 
+/**
+ * @brief Per-loop updates for the Coffee tab.
+ *
+ * Runs relay housekeeping, redraws the UI when state changes, and
+ * updates the fill-level progress bar on screen.
+ */
 void TabCoffee::loop()
 {
     relays->loop();

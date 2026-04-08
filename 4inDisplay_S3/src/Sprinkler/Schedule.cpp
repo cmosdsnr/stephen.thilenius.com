@@ -125,6 +125,9 @@ void checkForDateChange()
             }
 }
 
+/**
+ * @brief Stops any active manual channel override and notifies clients.
+ */
 void stopManual()
 {
     if (manualChannel >= 0)

@@ -9,6 +9,18 @@
 #include "Tabs.h"
 #include "Coffee/TabCoffee.h"
 
+/**
+ * @brief Construct a new Relays controller.
+ *
+ * Configures pin modes for motion sensor input and relay outputs,
+ * initializes all relays to LOW, and sets default state.
+ *
+ * @param motionPin Motion sensor input pin.
+ * @param lightsRelay Light relay output pin.
+ * @param fillRelay Fill relay output pin.
+ * @param lockRelay Lock relay output pin.
+ * @param lockhRelay Lock hold relay output pin.
+ */
 Relays::Relays(uint8_t motionPin, uint8_t lightsRelay, uint8_t fillRelay, uint8_t lockRelay, uint8_t lockhRelay)
 {
     _motionPin = motionPin;
@@ -34,6 +46,12 @@ Relays::Relays(uint8_t motionPin, uint8_t lightsRelay, uint8_t fillRelay, uint8_
     _lockh = false;
 }
 
+/**
+ * @brief Check the motion sensor and update relay states.
+ *
+ * Reads the motion pin. On new motion detection, turns on lights and fill.
+ * After 5 minutes of no motion, turns off lights and fill automatically.
+ */
 void Relays::Check()
 {
     mVal = digitalRead(_motionPin);
@@ -59,6 +77,9 @@ void Relays::Check()
     }
 }
 
+/**
+ * @brief Turn lights relay on and reset the motion timer.
+ */
 void Relays::LightsOn()
 {
     digitalWrite(_lightsRelay, HIGH);
@@ -70,6 +91,9 @@ void Relays::LightsOn()
         motionState = true;
     }
 }
+/**
+ * @brief Turn lights relay off and start the motion-block timer.
+ */
 void Relays::LightsOff()
 {
     digitalWrite(_lightsRelay, LOW);
@@ -80,6 +104,9 @@ void Relays::LightsOff()
         _blockMotion = millis();
     }
 }
+/**
+ * @brief Toggle the lights relay on or off.
+ */
 void Relays::LightsToggle()
 {
     if (!_lights)
@@ -93,6 +120,9 @@ void Relays::LightsToggle()
     }
 }
 
+/**
+ * @brief Turn fill relay on and start the fill timer.
+ */
 void Relays::FillOn()
 {
     digitalWrite(_fillRelay, HIGH);
@@ -105,6 +135,9 @@ void Relays::FillOn()
     }
 }
 
+/**
+ * @brief Turn fill relay off.
+ */
 void Relays::FillOff()
 {
     digitalWrite(_fillRelay, LOW);
@@ -115,6 +148,9 @@ void Relays::FillOff()
     }
 }
 
+/**
+ * @brief Toggle the fill relay on or off.
+ */
 void Relays::FillToggle()
 {
     if (!_fill)
@@ -127,6 +163,9 @@ void Relays::FillToggle()
     }
 }
 
+/**
+ * @brief Turn lock relay on and start the lock timer.
+ */
 void Relays::LockOn()
 {
     digitalWrite(_lockRelay, HIGH);
@@ -138,6 +177,9 @@ void Relays::LockOn()
     }
 }
 
+/**
+ * @brief Turn lock relay off.
+ */
 void Relays::LockOff()
 {
     digitalWrite(_lockRelay, LOW);
@@ -148,6 +190,9 @@ void Relays::LockOff()
     }
 }
 
+/**
+ * @brief Toggle the lock relay on or off.
+ */
 void Relays::LockToggle()
 {
     if (!_lock)
@@ -160,6 +205,9 @@ void Relays::LockToggle()
     }
 }
 
+/**
+ * @brief Turn lock hold relay on.
+ */
 void Relays::LockhOn()
 {
     digitalWrite(_lockhRelay, HIGH);
@@ -169,6 +217,9 @@ void Relays::LockhOn()
     }
 }
 
+/**
+ * @brief Turn lock hold relay off.
+ */
 void Relays::LockhOff()
 {
     digitalWrite(_lockhRelay, LOW);
@@ -178,6 +229,12 @@ void Relays::LockhOff()
     }
 }
 
+/**
+ * @brief Per-loop relay housekeeping.
+ *
+ * Auto-turns off lights after 5 minutes and fill after the configured
+ * fill duration. Updates the remaining-percentage values for each relay.
+ */
 void Relays::loop()
 {
     static uint64_t last = 0;

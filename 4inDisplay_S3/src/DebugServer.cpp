@@ -42,10 +42,6 @@
  * @param event The WiFi event that occurred
  */
 void WiFiEvent(WiFiEvent_t event);
-/**
- * Server ServerHome Page
- */
-
 //! user name and password to load served page from here
 const char *wwwUsername = "cmosdsnr";
 const char *wwwPassword = "qwe123";
@@ -62,7 +58,11 @@ bool espReset = false,
      resetToNeed4Speed = false,
      resetToAccess = false;
 
-/**********************************************************************************/
+/**
+ * @brief Handles requests for undefined routes, returning a 404 response.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void handleNotFound(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -70,7 +70,11 @@ void handleNotFound(AsyncWebServerRequest *request)
     request->send(404, "text/plain", "Not found");
 }
 
-/**********************************************************************************/
+/**
+ * @brief Serves the root index.html page from LittleFS.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void handleRoot(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -83,12 +87,21 @@ void handleRoot(AsyncWebServerRequest *request)
         ESP.restart();
     }
 }
+/**
+ * @brief Serves the favicon.ico file from LittleFS.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void favicon(AsyncWebServerRequest *request)
 {
     request->send(LittleFS, "/favicon.ico", "image/x-icon", false);
 }
 
-/**********************************************************************************/
+/**
+ * @brief Handles SSID/password change requests and redirects to root.
+ *
+ * @param request Pointer to the incoming HTTP request containing ssid and password params.
+ */
 void change(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -119,7 +132,11 @@ void change(AsyncWebServerRequest *request)
     }
 }
 
-/**********************************************************************************/
+/**
+ * @brief Resets the device to access-point mode after redirecting to root.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void resetToAccessPoint(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -132,7 +149,11 @@ void resetToAccessPoint(AsyncWebServerRequest *request)
     resetToAccess = true;
 }
 
-/**********************************************************************************/
+/**
+ * @brief Resets the device to the Need4Speed network after redirecting to root.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void resetToN4S(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -145,7 +166,11 @@ void resetToN4S(AsyncWebServerRequest *request)
     resetToNeed4Speed = true;
 }
 
-/**********************************************************************************/
+/**
+ * @brief Triggers an ESP restart after redirecting the client to root.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void reboot(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -157,7 +182,11 @@ void reboot(AsyncWebServerRequest *request)
     espReset = true;
 }
 
-/**********************************************************************************/
+/**
+ * @brief Returns filesystem information to the client.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void fsInfo(AsyncWebServerRequest *request)
 {
     String finfo;
@@ -168,16 +197,47 @@ void fsInfo(AsyncWebServerRequest *request)
     request->send(response);
 }
 
+/**
+ * @brief Callback for handling HTTP request body data.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ * @param data Pointer to the body data chunk.
+ * @param len Length of the current data chunk.
+ * @param index Byte offset of this chunk in the total body.
+ * @param total Total expected body size.
+ */
 void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
     //! Handle body
 }
 
+/**
+ * @brief Callback for handling LittleFS file uploads.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ * @param filename Name of the file being uploaded.
+ * @param index Byte offset of this chunk in the total upload.
+ * @param data Pointer to the upload data chunk.
+ * @param len Length of the current data chunk.
+ * @param final true if this is the last chunk of the upload.
+ */
 void onUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
 {
     //! Handle upload
 }
 
+/**
+ * @brief Callback for handling file uploads to the SD card.
+ *
+ * Opens, writes, and closes the file on SD using SPI mutex protection.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ * @param filename Name of the file being uploaded.
+ * @param index Byte offset of this chunk in the total upload.
+ * @param data Pointer to the upload data chunk.
+ * @param len Length of the current data chunk.
+ * @param final true if this is the last chunk of the upload.
+ */
 void onSDUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
 {
     static File sdUploadFile;
@@ -218,7 +278,11 @@ void onSDUpload(AsyncWebServerRequest *request, String filename, size_t index, u
     }
 }
 
-/**********************************************************************************/
+/**
+ * @brief Returns an HTML table row of variable names for the debug dashboard.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void variableNames(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -234,7 +298,11 @@ void variableNames(AsyncWebServerRequest *request)
     response->addHeader("Connection", "close");
     request->send(response);
 }
-/**********************************************************************************/
+/**
+ * @brief Returns an HTML table row of current variable values for the debug dashboard.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void variableValues(AsyncWebServerRequest *request)
 {
     if (!request->authenticate(wwwUsername, wwwPassword))
@@ -257,7 +325,11 @@ void variableValues(AsyncWebServerRequest *request)
     request->send(response);
 }
 
-/**********************************************************************************/
+/**
+ * @brief Returns an HTML table header row for the event log.
+ *
+ * @param request Pointer to the incoming HTTP request.
+ */
 void eventHeader(AsyncWebServerRequest *request)
 {
 
@@ -269,9 +341,9 @@ void eventHeader(AsyncWebServerRequest *request)
     request->send(response);
 }
 
-/**********************************************************************************/
-
-/**********************************************************************************/
+/**
+ * @brief Registers all HTTP routes, static file serving, OTA, and WebSocket handlers.
+ */
 void SetUpServer()
 {
 
@@ -408,6 +480,11 @@ void SetUpServer()
     initWebSocket(&server);
 }
 
+/**
+ * @brief Main loop handler for WiFi-related tasks.
+ *
+ * Checks for OTA file changes and refreshes the file list when needed.
+ */
 void WifiLoop()
 {
     if (ElegantOTA.filesChanged)
@@ -419,13 +496,12 @@ void WifiLoop()
     }
     ElegantOTA.loop();
 }
-/**********************************************************
- * Get the SSID and PW from EEprom or Serial input
- * Connect to the Wifi
- * called from setup
- **********************************************************/
-/**********************************************************************************/
-void StartServer(bool WAIT_FOREVER = false)
+/**
+ * @brief Configures routes and starts the HTTP server.
+ *
+ * @param WAIT_FOREVER If true, blocks until WiFi connection is established.
+ */
+void StartServer(bool WAIT_FOREVER)
 {
     SetUpServer();
     server.begin();

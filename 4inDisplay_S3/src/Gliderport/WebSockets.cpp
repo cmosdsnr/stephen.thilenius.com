@@ -20,7 +20,9 @@ const char *eventHeaders[NUM_EVENT_HEADERS] = {"TimeStamp", "Event", "-"};
 #define NUM_VARS 14
 const char *vNames[NUM_VARS] = {"local Time", "epoch", "roof temp count", "roof temp read", "roof temp ref", "Wind count", "period", "delay Rising", "delay Falling", "sensor count", "humidity", "dht Temp", "bmp Temp", "pressure"};
 
-/**********************************************************************************/
+/**
+ * @brief Builds the initial variable/event-header response for WebSocket clients.
+ */
 void updateRequest()
 {
     doc.clear();
@@ -32,7 +34,9 @@ void updateRequest()
     for (int i = 0; i < NUM_EVENT_HEADERS; i++)
         doc["eventHeaders"][i] = eventHeaders[i];
 
-    doc["variables"]["local Time"] = getLocalTime();
+    char localTimeBuf[12];
+    getLocalTime(localTimeBuf, sizeof(localTimeBuf));
+    doc["variables"]["local Time"] = localTimeBuf;
     doc["variables"]["epoch"] = getEpoch();
     doc["variables"][ROOF_TEMP_COUNT] = 0;
     doc["variables"][ROOF_TEMP_READ] = 0;
@@ -48,11 +52,19 @@ void updateRequest()
     doc["variables"][SENSOR_PRESSURE] = 0;
 }
 
+/**
+ * @brief Adds Gliderport-specific sensor data to the JSON payload.
+ *
+ * @param variables JSON object to populate with sensor readings.
+ */
 void addProjectVariables(JsonObject variables)
 {
     sensors.addAllData(variables);
 }
 
+/**
+ * @brief Dispatches incoming WebSocket messages by code.
+ */
 void handleMessage()
 {
     int code = doc["code"];

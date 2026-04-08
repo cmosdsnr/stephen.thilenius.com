@@ -1,3 +1,8 @@
+/**
+ * @file EpromData.cpp
+ * @brief Gliderport EEPROM storage for camera MAC and IP addresses.
+ */
+
 #ifdef GLIDERPORT
 
 #include <EEPROM.h>
@@ -30,6 +35,12 @@ void loadCameraMac(uint8_t cameraNumber, uint8_t *n)
     EEPROM.readBytes(base, n, 6);
 }
 
+/**
+ * @brief Saves a camera IP address to EEPROM.
+ *
+ * @param cameraNumber 1 or 2
+ * @param ip IP address to store
+ */
 void saveCameraIP(uint8_t cameraNumber, IPAddress ip)
 {
     uint16_t base = cameraNumber == 1 ? CAMERA1_IP_ADDRESS : CAMERA2_IP_ADDRESS;
@@ -43,6 +54,12 @@ void saveCameraIP(uint8_t cameraNumber, IPAddress ip)
     EEPROM.commit();
 }
 
+/**
+ * @brief Loads a camera IP address from EEPROM.
+ *
+ * @param cameraNumber 1 or 2
+ * @return IPAddress The stored IP address.
+ */
 IPAddress loadCameraIP(uint8_t cameraNumber)
 {
     uint16_t base = cameraNumber == 1 ? CAMERA1_IP_ADDRESS : CAMERA2_IP_ADDRESS;

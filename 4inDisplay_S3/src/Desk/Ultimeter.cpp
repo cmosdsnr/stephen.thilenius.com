@@ -6,6 +6,7 @@
 #include "Desk/WindTimer.h"
 #include "Desk/Ultimeter.h"
 #include <Clock.h>
+#include "SPIMutex.h"
 
 static volatile bool isSending = false;
 bool ultimeterVerbose = false;
@@ -245,6 +246,7 @@ void sendWindDataTask(void *parameter)
     data->http->addHeader("Content-Type", "application/json");
 
     //! Send the POST request
+    xSemaphoreTake(httpsGuard, portMAX_DELAY);
     int httpResponseCode = data->http->POST(payload);
 
     //! Check the response code
@@ -258,9 +260,10 @@ void sendWindDataTask(void *parameter)
     else
         printf("Error code: %d\n", httpResponseCode);
 
+    data->http->end(); //!< Free the resources before freeing the struct
+    xSemaphoreGive(httpsGuard);
     //! Free the allocated memory
     delete data;
-    data->http->end(); //!< Free the resources
     isSending = false;
     //! Delete the task when done
     vTaskDelete(NULL);
@@ -335,6 +338,7 @@ void Ultimeter::sendWindDataToServer(uint64_t hour, uint64_t tick, float speed, 
 void sendWindPingTask(void *parameter)
 {
     PingData *data = (PingData *)parameter;
+    xSemaphoreTake(httpsGuard, portMAX_DELAY);
     int httpResponseCode = data->http->GET();
 
     //! Check the response code
@@ -347,9 +351,10 @@ void sendWindPingTask(void *parameter)
     else
         printf("Ping Error code: %d\n", httpResponseCode);
 
+    data->http->end(); //!< Free the resources before freeing the struct
+    xSemaphoreGive(httpsGuard);
     //! Free the allocated memory
     delete data;
-    data->http->end(); //!< Free the resources
     isSending = false;
     //! Delete the task when done
     vTaskDelete(NULL);
@@ -414,5 +419,5 @@ void Ultimeter::pingServer()
  * @details Provides access to wind measurement and transmission functionality
  *          throughout the application.
  */
-Ultimeter *ultimeter = new Ultimeter();
+Ultimeter *ultimeter = nullptr;
 #endif

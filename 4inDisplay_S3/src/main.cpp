@@ -27,12 +27,12 @@
 #include "SPIMutex.h"
 
 SemaphoreHandle_t spiMutex = NULL;
+SemaphoreHandle_t httpsGuard = NULL;
 
 /**
  * @brief Attempts to connect to the SOCKS proxy.
  *
  * Logic depends on the specific module (Gliderport, etc.).
- * @return void
  */
 void trySocks();
 #ifdef GLIDERPORT
@@ -48,6 +48,7 @@ void trySocks();
 
 #ifdef DESK
 #include "Desk/Ultimeter.h"
+#include "Desk/Shot.h"
 #endif
 
 #ifdef SPRINKLER
@@ -62,6 +63,11 @@ int i = 0;
 
 Networks *wifiNetworks = new Networks();
 
+/**
+ * @brief Arduino setup entry point.
+ *
+ * Initializes peripherals, filesystem, display, WiFi, and module-specific hardware.
+ */
 void setup(void)
 {
     delay(100);
@@ -71,6 +77,7 @@ void setup(void)
     //! no initialization will print with printf only
 
     spiMutex = xSemaphoreCreateMutex();
+    httpsGuard = xSemaphoreCreateMutex();
 
     Serial0.begin(115200);
     Serial0.setTimeout(5000);
@@ -92,6 +99,10 @@ void setup(void)
     InitI2C();
     scanI2CDevices();
     startEEprom();
+#ifdef DESK
+    ultimeter = new Ultimeter();
+    shot = new Shot();
+#endif
 #ifdef GARAGE
     setupDistance();
 #endif
@@ -134,10 +145,16 @@ void setup(void)
 #endif
 }
 
+/**
+ * @brief Arduino main loop.
+ *
+ * Runs clock, WiFi, serial, tab display, and module-specific loop tasks each cycle.
+ */
 void loop(void)
 {
     static bool block = false;
     clockLoop(); //!< check for time updates
+    buzzerLoop();
     loopFtp();
     loopLed();
     WifiLoop(); //!< elegant and serial
@@ -159,6 +176,7 @@ void loop(void)
 
 #ifdef DESK
     ultimeter->loop();
+    shot->loop();
 #endif
 
 #ifdef SPRINKLER

@@ -13,11 +13,6 @@
 #include "Button.h"
 #include "Sprinkler/TabStatusStructs.h"
 
-uint16_t rgbTo565(uint8_t r, uint8_t g, uint8_t b)
-{
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-}
-
 struct Channel Days[NUM_DAYS] = {
     {{0, 0}, {0, 0}, {"", ""}, rgbTo565(109, 97, 167)},
     {{0, 0}, {0, 0}, {"", ""}, rgbTo565(6, 128, 205)},
@@ -41,10 +36,14 @@ const char *chLabels[6] = {"PUMP", "CH1", "CH2", "CH3", "CH4", "CH5"};
 const char *dayLabels[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 const char *fullDayLabels[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
+/**
+ * @brief Constructs the Sprinkler status tab.
+ *
+ * @param tft Pointer to the TFT display driver.
+ */
 TabStatus::TabStatus(TFT_eSPI *tft) : Tab()
 {
     name = "Status";
-    bgColor = 0xd7ff;
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;
@@ -84,6 +83,11 @@ TabStatus::TabStatus(TFT_eSPI *tft) : Tab()
                             });
 }
 
+/**
+ * @brief Sets the 14-day boundary data and marks the tab for redraw.
+ *
+ * @param boundary The boundary data to apply.
+ */
 void TabStatus::SetBoundary(BoundaryData boundary)
 {
     this->boundary = boundary;
@@ -91,6 +95,9 @@ void TabStatus::SetBoundary(BoundaryData boundary)
     changed = true;
 }
 
+/**
+ * @brief Advances the boundary date by one day and updates month/day fields.
+ */
 void TabStatus::addDay()
 {
     boundary.boundaryInfo.tm_mday += 1;
@@ -99,10 +106,18 @@ void TabStatus::addDay()
     day = boundary.boundaryInfo.tm_mday;
 }
 
+/**
+ * @brief Resets the boundary display state (stub).
+ */
 void TabStatus::resetBoundary()
 {
 }
 
+/**
+ * @brief Draws a single day cell in the summary calendar view.
+ *
+ * @param day Day index within the 14-day cycle.
+ */
 void TabStatus::drawDay(int day)
 {
     _tft->setTextFont(1);
@@ -119,7 +134,10 @@ void TabStatus::drawDay(int day)
         bool enabled = false;
         for (const ScheduleItem &e : schedule)
             if (e.channel == (uint8_t)j && e.day == (uint8_t)day)
-                { enabled = true; break; }
+            {
+                enabled = true;
+                break;
+            }
         if (enabled)
         {
             _tft->fillCircle(x, pos, 6, rgbTo565(220, 255, 220));
@@ -134,6 +152,9 @@ void TabStatus::drawDay(int day)
     }
 }
 
+/**
+ * @brief Draws either the summary calendar or the detail view for the selected day.
+ */
 void TabStatus::draw()
 {
     changed = false;
@@ -144,6 +165,9 @@ void TabStatus::draw()
         drawDetails();
 }
 
+/**
+ * @brief Draws the 14-day summary calendar showing all days with channel status indicators.
+ */
 void TabStatus::drawSummary()
 {
     _tft->fillRect(0, Days[0].position.y, availableWidth, availableHeight, bgColor);
@@ -159,6 +183,9 @@ void TabStatus::drawSummary()
         drawDay(i);
 }
 
+/**
+ * @brief Draws the detailed schedule table for the currently selected day.
+ */
 void TabStatus::drawDetails()
 {
     Report.printf("Draw details for day %d\n", day);
@@ -232,10 +259,13 @@ void TabStatus::drawDetails()
         const ScheduleItem *entry = nullptr;
         for (const ScheduleItem &e : schedule)
             if (e.channel == (uint8_t)channelIndex && e.day == (uint8_t)day)
-                { entry = &e; break; }
+            {
+                entry = &e;
+                break;
+            }
 
         int startMinutes = entry ? entry->start : 0;
-        int durationMin  = entry ? entry->duration : 0;
+        int durationMin = entry ? entry->duration : 0;
 
         //! Start time (column 1)
         char startStr[8];
@@ -266,7 +296,15 @@ void TabStatus::drawDetails()
     }
 }
 
-//! only called if touch was > TAB_H - CORNER_RADIUS
+/**
+ * @brief Handles touch events on the status tab.
+ *
+ * In summary view, selects a day. In detail view, handles back button and actions.
+ *
+ * @param x Touch x coordinate.
+ * @param y Touch y coordinate.
+ * @param lastClick Milliseconds since the last touch event.
+ */
 void TabStatus::handle(uint16_t x, uint16_t y, uint32_t lastClick)
 {
     if (lastClick > 500)
@@ -297,6 +335,9 @@ void TabStatus::handle(uint16_t x, uint16_t y, uint32_t lastClick)
     }
 }
 
+/**
+ * @brief Periodic loop for the status tab (currently unused).
+ */
 void TabStatus::loop()
 {
 }

@@ -14,4 +14,7 @@ bool loadDataFile();
  */
 bool saveDataFile();
 
+/**
+ * @brief Initializes the schedule with test data and saves to persistent storage.
+ */
 void initData();

@@ -87,6 +87,12 @@ uint64_t last0 = 0, last1 = 0, itime, isum = 0, maxItime = 0, minItime = 1000000
 
 static volatile TickType_t lastTick0 = 0; //!< FreeRTOS tick (1 ms on Arduino-ESP32)
 
+/**
+ * @brief ISR for ADS1115 at address 0x48 (channels 0-2).
+ *
+ * Fires on the ALERT pin falling edge. Increments the sample
+ * counter and flags that a new sample is ready to read.
+ */
 void IRAM_ATTR alert0()
 {
     uint64_t i = esp_timer_get_time();
@@ -106,6 +112,12 @@ void IRAM_ATTR alert0()
     }
 }
 
+/**
+ * @brief ISR for ADS1115 at address 0x49 (channels 3-5).
+ *
+ * Fires on the ALERT pin falling edge. Increments the sample
+ * counter and flags that a new sample is ready to read.
+ */
 void IRAM_ATTR alert1()
 {
     uint64_t i = esp_timer_get_time();
@@ -121,6 +133,11 @@ void IRAM_ATTR alert1()
     }
 }
 
+/**
+ * @brief Verify that both ADS1115 devices are present on the I2C bus.
+ *
+ * Probes addresses 0x48 and 0x49 and prints the result.
+ */
 void check_ads()
 {
     Wire.beginTransmission(0x48);
@@ -138,6 +155,12 @@ void check_ads()
     Report.println("ADS48 and 49 are present!");
 }
 
+/**
+ * @brief Initialize the power meter hardware.
+ *
+ * Starts both ADS1115 ADCs, configures gain and data rate,
+ * attaches ALERT interrupts, and initializes DSP resources.
+ */
 void powerMeterSetup(void)
 {
     isPowerMeterEnabled = true;
@@ -173,6 +196,15 @@ uint32_t maxTSL = 0, minTSL = 100000, sum = 0;
 bool running = false;
 time_t lastStart = 0;
 
+/**
+ * @brief Run one iteration of the power meter sampling loop.
+ *
+ * Samples one differential channel on each ADC at 860 SPS for
+ * approximately one second, then rests for four seconds. After all
+ * six channels have been captured, runs signal analysis.
+ *
+ * @return True while actively sampling (caller should block touch input).
+ */
 bool powerMeterLoop(void)
 {
     static uint32_t lastMicro, startMicro;
@@ -301,6 +333,15 @@ bool powerMeterLoop(void)
     return running;
 }
 
+/**
+ * @brief Run the full analysis pipeline on one channel's samples.
+ *
+ * Removes the DC offset, runs the Goertzel algorithm for 60 Hz
+ * detection, and computes the FFT spectrum.
+ *
+ * @param channel Channel index (0-5) to analyze.
+ * @return AnalysisResult containing DFT, Goertzel, and info data.
+ */
 AnalysisResult processSamples(uint8_t channel)
 {
     AnalysisResult result;
@@ -310,6 +351,12 @@ AnalysisResult processSamples(uint8_t channel)
     return result;
 }
 
+/**
+ * @brief Initialize DSP resources for signal analysis.
+ *
+ * Sets up the Goertzel filter for 60 Hz, generates the
+ * Blackman window, and initializes the ESP-DSP FFT engine.
+ */
 void initDSP()
 {
     initGoertzel(60.0f); //!< 60Hz
@@ -330,7 +377,11 @@ void initDSP()
 //! Goertzel state
 static float coeff, sine, cosine;
 
-//! Initialize Goertzel for a target frequency
+/**
+ * @brief Initialize Goertzel coefficients for a target frequency.
+ *
+ * @param targetFreq Target frequency in Hz to detect.
+ */
 void initGoertzel(float targetFreq)
 {
     float normalized = 2.0f * M_PI * targetFreq / a0SampleRate; //!< normalize to sample rate
@@ -339,6 +390,14 @@ void initGoertzel(float targetFreq)
     coeff = 2.0f * cosine;
 }
 
+/**
+ * @brief Run the Goertzel algorithm on the current workspace buffer.
+ *
+ * Computes the amplitude and phase of the target frequency
+ * component previously configured by initGoertzel().
+ *
+ * @return GoertzelResult with amplitude and phase (radians).
+ */
 GoertzelResult goertzel()
 {
     float Q0 = 0, Q1 = 0, Q2 = 0;
@@ -360,6 +419,15 @@ GoertzelResult goertzel()
     return result;
 }
 
+/**
+ * @brief Copy samples to the workspace and remove the DC offset.
+ *
+ * Converts raw ADC counts to volts, computes the mean over an
+ * integer number of 60 Hz cycles, and subtracts it.
+ *
+ * @param channel Channel index (0-5) to process.
+ * @return Info containing the mean, min, and max of the raw signal.
+ */
 Info removeDCOffset(uint8_t channel)
 {
     Info info;
@@ -390,6 +458,15 @@ Info removeDCOffset(uint8_t channel)
 
 static float fftBuf[2 * FFT_SIZE];
 
+/**
+ * @brief Compute the FFT of the current workspace buffer.
+ *
+ * Applies a Blackman window, runs a radix-2 complex FFT via
+ * ESP-DSP, and converts magnitudes to dB. Identifies the
+ * strongest frequency bin.
+ *
+ * @return DFTResult containing the spectrum, peak bin, and peak frequency.
+ */
 DFTResult calcDFT(void)
 {
     //! 2) Build the interleaved complex array

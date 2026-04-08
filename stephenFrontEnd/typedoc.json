@@ -7,5 +7,6 @@
   "excludePrivate": true,
   "readme": "Readme.md",
   "includeVersion": true,
-  "highlightLanguages": ["jsx", "tsx", "js", "ts", "json", "bash"]
+  "highlightLanguages": ["jsx", "tsx", "js", "ts", "json", "bash"],
+  "disableSources": true
 }
