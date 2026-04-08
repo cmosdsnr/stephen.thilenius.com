@@ -49,10 +49,14 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@types/lodash": "^4.17.4",
     "@types/luxon": "^3.6.2",
     "@types/react-modal": "^3.16.3",
-    "shiki": "^3.11.0"
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.9",
+    "shiki": "^3.11.0",
+    "tailwindcss": "^4.2.2"
   },
   "packageManager": "yarn@4.9.4+sha512.7b1cb0b62abba6a537b3a2ce00811a843bea02bcf53138581a6ae5b1bf563f734872bd47de49ce32a9ca9dcaff995aa789577ffb16811da7c603dcf69e73750b"
 }

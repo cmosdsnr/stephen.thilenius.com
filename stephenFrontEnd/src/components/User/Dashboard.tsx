@@ -3,7 +3,6 @@ import { Row, Col, Card, Button } from 'react-bootstrap'
 
 import { useData } from '../../contexts/DataContext'
 import { Link, useNavigate } from 'react-router-dom'
-import styles from './Dashboard.module.css'
 import { AdminMenu } from '../Administrator/AdminMenu'
 import Avatar from './Avatar'
 
@@ -17,7 +16,7 @@ export default function Dashboard() {
             {pb.authStore.isValid ?
                 <>
                     <AdminMenu offset={0} span={12} />
-                    <div className={`w-100 mx-auto pt-4 ${styles.dashContent}`}>
+                    <div className="w-100 mx-auto pt-4 max-w-[500px]">
                         <Card>
                             <Card.Body>
                                 <Row>
@@ -29,15 +28,15 @@ export default function Dashboard() {
                                     </Col>
                                 </Row>
                                 <Row>
-                                    <div className={styles.dataRow}><div className={styles.column1}><strong>Name:</strong></div><div className={styles.column2}>{pb.authStore.model?.name}</div></div>
-                                    <div className={styles.dataRow}><div className={styles.column1}><strong>Email:</strong></div><div className={styles.column2}>{pb.authStore.model?.email}</div></div>
-                                    <div className={styles.dataRow}><div className={styles.column1}><strong>Role: </strong></div><div className={styles.column2}>{pb.authStore.model?.role}</div></div>
+                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Name:</strong></div><div className="[flex:70%]">{pb.authStore.model?.name}</div></div>
+                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Email:</strong></div><div className="[flex:70%]">{pb.authStore.model?.email}</div></div>
+                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Role: </strong></div><div className="[flex:70%]">{pb.authStore.model?.role}</div></div>
                                     {pb.authStore.model?.settings != null && Object.keys(pb.authStore.model?.settings).length > 0 && <>
-                                        <div className={styles.dataRow}><div className={styles.column1}><strong>settings info:</strong></div><div className={styles.column2}></div></div>
-                                        {Object.keys(pb.authStore.model.settings).map((key, index) => <div key={index} className="row"><div className="column1"><strong>{key}:</strong></div><div className={styles.column3}>{pb.authStore.model.settings[key]}</div></div>)}
+                                        <div className="flex"><div className="[flex:30%] text-right"><strong>settings info:</strong></div><div className="[flex:70%]"></div></div>
+                                        {Object.keys(pb.authStore.model.settings).map((key, index) => <div key={index} className="row"><div className="column1"><strong>{key}:</strong></div><div className="[flex:50%]">{pb.authStore.model.settings[key]}</div></div>)}
                                     </>
                                     }
-                                    <div className={`mx-auto ${styles.profileActions}`}>
+                                    <div className="mx-auto mt-[10px] w-[200px]">
                                         <Link to="/update-profile" className="btn btn-primary w-100">Update Profile</Link>
                                     </div>
                                 </Row>

@@ -10,7 +10,6 @@ import back from '../../images/back.png'
 import { API } from '../../api'
 import { useData } from '../../contexts/DataContext'
 import { SkeletonGrid, SkeletonImage } from '../Skeleton'
-import styles from './gallery.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight, faRotateLeft, faRotateRight } from '@fortawesome/free-solid-svg-icons'
 
@@ -97,7 +96,7 @@ export function Albums(): JSX.Element {
     return (
         <>
             {/* Toggle between Albums and Boxes */}
-            <Row className={`mb-3 ${styles.albumsRow}`}>
+            <Row className="mb-3 mt-5">
                 <Col xs={4} className="text-center mb-2">
                     <h2>{mode === 'album' ? 'Albums' : 'Boxes'}</h2>
                 </Col>
@@ -136,6 +135,7 @@ export function Albums(): JSX.Element {
                                     }}
                                     src={`${GALLERY_BASE}/gallery/albums/${encodeURIComponent(a)}/thumbnail/cover.jpg`}
                                     alt={a}
+                                    loading="lazy"
                                     onContextMenu={onRotateRightClick(a)}
                                 />
                                 <figcaption>{a}</figcaption>
@@ -156,6 +156,7 @@ export function Albums(): JSX.Element {
                                     }}
                                     src={`${GALLERY_BASE}/gallery/specialAlbums/${encodeURIComponent(a)}/thumbnail/cover.jpg`}
                                     alt={a}
+                                    loading="lazy"
                                     onContextMenu={onRotateRightClick(a)}
                                 />
                                 <figcaption>{a} <em>(special)</em></figcaption>
@@ -176,6 +177,7 @@ export function Albums(): JSX.Element {
                                     }}
                                     src={`${GALLERY_BASE}/gallery/boxes/images/box.jpg`}
                                     alt={`Box ${b}`}
+                                    loading="lazy"
                                     onContextMenu={onRotateRightClick(b)}
                                 />
                                 <figcaption>Box {b}</figcaption>
@@ -313,12 +315,13 @@ export function Album(): JSX.Element {
                 {images.map((image) => (
                     <Col key={image} xs={12} sm={6} md={4} lg={3}>
                         <Link to={`/photos/picture/${encodeURIComponent(name!)}/${encodeURIComponent(image)}${isSpecial ? '/special' : isBoxes ? '/box' : ''}`}>
-                            <figure className={styles.thumbBox}>
+                            <figure className="relative aspect-square overflow-hidden m-0">
                                 <img
-                                    className={styles.thumbImg}
+                                    className="absolute inset-0 w-full h-full object-contain origin-center transition-transform duration-[120ms] ease-in"
                                     style={{ transform: `rotate(${(rotation[image] ?? 0) * 90}deg)`, width: "100%" }}
                                     src={`${baseUrl}/${encodeURIComponent(name!)}/thumbnail/${encodeURIComponent(image)}`}
                                     alt={image}
+                                    loading="lazy"
                                     onContextMenu={(e) => {
                                         e.preventDefault();       // block browser menu
                                         e.stopPropagation();      // don't let <Link> see it

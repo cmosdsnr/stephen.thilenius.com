@@ -56,6 +56,97 @@ h1 {
     text-align: center;
 }
 
+/* ── Animation + complex selectors migrated from sprinkler.module.css ── */
+
+@keyframes blinkingBackground {
+    0%   { background-color: #20ff30; }
+    25%  { background-color: #85b2ff; }
+    50%  { background-color: #ff7a83; }
+    75%  { background-color: #afc9fe; }
+    100% { background-color: #1ab8ff; }
+}
+
+@keyframes blinkingRed {
+    0%   { background-color: #cc0000; }
+    50%  { background-color: #ff6666; }
+    100% { background-color: #cc0000; }
+}
+
+@keyframes progress-animation {
+    0%   { background-position: 100%; }
+    100% { background-position: 0; }
+}
+
+.blink-bg {
+    color: #fff;
+    animation: blinkingBackground 2s infinite;
+}
+
+.blink-red {
+    color: #fff;
+    animation: blinkingRed 0.8s infinite;
+}
+
+/* Toggle switch — requires ::before pseudo-element and :checked + sibling selector */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #cc0000;
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #22aa00;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+/* Progress bar with gradient animation */
+.sprinkler-progress {
+    width: 100%;
+    height: 8px;
+    background: #e1e4e8;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.sprinkler-progress .progress-bar {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #ffd33d, #ea4aaa 17%, #b34bff 34%, #01feff 51%, #ffd33d 68%, #ea4aaa 85%, #b34bff);
+    background-size: 300% 100%;
+    animation: progress-animation 2s linear infinite;
+}
+
 /* react-datepicker global overrides — must stay global */
 .react-datepicker--time-only {
     width: 140px;

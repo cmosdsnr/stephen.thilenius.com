@@ -15,25 +15,25 @@ const shimmer: React.CSSProperties = {
     borderRadius: 4,
 }
 
-export function SkeletonBlock({ width = '100%', height = 20, style: extra }: {
+export const SkeletonBlock = React.memo(function SkeletonBlock({ width = '100%', height = 20, style: extra }: {
     width?: string | number
     height?: string | number
     style?: React.CSSProperties
 }) {
     return <div style={{ width, height, ...shimmer, ...extra }} />
-}
+})
 
 /** Aspect-ratio box — defaults to 4:3 landscape (typical thumbnail) */
-export function SkeletonImage({ aspect = '75%' }: { aspect?: string }) {
+export const SkeletonImage = React.memo(function SkeletonImage({ aspect = '75%' }: { aspect?: string }) {
     return (
         <div style={{ width: '100%', paddingBottom: aspect, position: 'relative', overflow: 'hidden', borderRadius: 4 }}>
             <div style={{ position: 'absolute', inset: 0, ...shimmer }} />
         </div>
     )
-}
+})
 
 /** Grid of skeleton thumbnail cards — for album/gallery loading states */
-export function SkeletonGrid({ count = 8 }: { count?: number }) {
+export const SkeletonGrid = React.memo(function SkeletonGrid({ count = 8 }: { count?: number }) {
     return (
         <Row className="mt-3">
             {Array.from({ length: count }).map((_, i) => (
@@ -44,15 +44,15 @@ export function SkeletonGrid({ count = 8 }: { count?: number }) {
             ))}
         </Row>
     )
-}
+})
 
 /** Chart-shaped placeholder rectangle */
-export function SkeletonChart({ height = 300 }: { height?: number }) {
+export const SkeletonChart = React.memo(function SkeletonChart({ height = 300 }: { height?: number }) {
     return <SkeletonBlock height={height} style={{ marginBottom: 16 }} />
-}
+})
 
 /** Table with N skeleton rows */
-export function SkeletonTable({ rows = 5, cols = 2 }: { rows?: number; cols?: number }) {
+export const SkeletonTable = React.memo(function SkeletonTable({ rows = 5, cols = 2 }: { rows?: number; cols?: number }) {
     return (
         <table style={{ width: '100%' }}>
             <tbody>
@@ -68,4 +68,4 @@ export function SkeletonTable({ rows = 5, cols = 2 }: { rows?: number; cols?: nu
             </tbody>
         </table>
     )
-}
+})

@@ -6,7 +6,8 @@ import * as yup from "yup"
 
 import { useData } from '../../contexts/DataContext'
 import { Link, useNavigate } from 'react-router-dom'
-import styles from '../../modals/modals.module.css'
+
+const warnClass = "mb-5 border border-[rgb(191,22,80)] [border-left-width:10px] [border-left-color:rgb(236,89,144)] bg-[rgb(251,236,242)]"
 
 export default function UpdateProfile() {
     const { pb } = useData();
@@ -45,7 +46,7 @@ export default function UpdateProfile() {
     }
 
     return (
-        <div className={`w-100 mx-auto pt-4 ${styles.updateContent}`}>
+        <div className="w-100 mx-auto pt-4 max-w-[800px]">
             <Card>
                 <Card.Body>
                     <h2 className="text-center mb-4">Update Profile</h2>
@@ -60,7 +61,7 @@ export default function UpdateProfile() {
                         <Form.Group id="other">
                             <Form.Label>Other/Info</Form.Label>
                             <Form.Control
-                                                className={errors.other ? styles.warn : undefined}
+                                                className={errors.other ? warnClass : undefined}
                                 type="text"
                                 {...register('other')}
 
@@ -86,7 +87,7 @@ export default function UpdateProfile() {
                         <Form.Group id="email">
                             <Form.Label>Email</Form.Label>
                             <Form.Control
-                                                className={errors.email ? styles.warn : undefined}
+                                                className={errors.email ? warnClass : undefined}
                                 type="email"
                                 {...register('email', { required: true, pattern: /^\S+@\S+$/i })}
                                 required
@@ -95,7 +96,7 @@ export default function UpdateProfile() {
                         <Form.Group id="password">
                             <Form.Label>password</Form.Label>
                             <Form.Control
-                                                className={errors.password ? styles.warn : undefined}
+                                                className={errors.password ? warnClass : undefined}
                                 type="password"
                                 {...register('password', { required: false, pattern: /^.{8,}$/i })}
                                 placeholder='leave blank to keep the same' />

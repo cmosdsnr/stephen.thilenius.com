@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-import styles from "./message.module.css"
+import React, { useCallback } from "react";
 import { useData } from '../../contexts/DataContext'
 
 interface Props {
@@ -16,17 +15,20 @@ interface Props {
     };
 }
 
-export default function Message({ msgItem }: Props) {
+const Message = React.memo(function Message({ msgItem }: Props) {
     const { deleteMessage, pb } = useData()
+    const handleDelete = useCallback(() => deleteMessage(msgItem), [deleteMessage, msgItem])
 
     return (
-        <div className={styles.message}>
+        <div className="pb-5">
             <b>{msgItem.created}</b> from {msgItem.expand.userId.name?.length > 1 ? <>{msgItem.expand.userId.name}</> : "unknown"} {
                 msgItem.userId === pb.authStore.model?.id ?
-                    <span className={styles.deleteBtn}
-                        onClick={() => deleteMessage(msgItem)}
+                    <span className="hover:bg-yellow-300 hover:cursor-pointer"
+                        onClick={handleDelete}
                     >❌</span> : <></>}<br />
             {msgItem.message}
         </div>
     );
-}
+})
+
+export default Message;

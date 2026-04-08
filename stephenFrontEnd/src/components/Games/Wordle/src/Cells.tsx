@@ -31,7 +31,7 @@ interface LetterCellProps {
  * @param {Function} props.onRightClick - Handler for right click.
  * @returns {JSX.Element}
  */
-export function LetterCell({
+export const LetterCell = React.memo(function LetterCell({
     letter = '',
     accuracy = 0,
     greyed = false,
@@ -50,7 +50,7 @@ export function LetterCell({
             {letter}
         </span>
     );
-}
+})
 
 interface WordCellProps {
     wordIndex?: number;

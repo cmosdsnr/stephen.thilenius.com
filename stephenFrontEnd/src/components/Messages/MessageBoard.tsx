@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import PostMessage from './PostMessage'
 import MessagesDisplay from './MessagesDisplay'
-import styles from "./message.module.css"
 import { useData } from '../../contexts/DataContext'
 
 
@@ -15,8 +14,8 @@ export default function MessageBoard() {
 
 
     return (
-        <div className={styles.board}>
-            <h1 className={styles.boardTitle}>Feel free to post for all to see!</h1>
+        <div className="w-4/5 my-10 mx-auto">
+            <h1 className="mb-10">Feel free to post for all to see!</h1>
             <PostMessage />
             <MessagesDisplay />
         </div>

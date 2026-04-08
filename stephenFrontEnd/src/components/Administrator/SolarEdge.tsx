@@ -34,7 +34,6 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-adapter-date-fns';
 import { preventOverflow } from '@popperjs/core';
 import { chartTeal } from '../../tokens';
-import solarStyles from './SolarEdge.module.css';
 
 /**
  * Represents SunSpec common model information from the solar inverter.
@@ -459,14 +458,14 @@ export default function SolarEdge() {
             <div>
                 <AdminMenu span={4} offset={8} />
                 <h1>SolarEdge</h1>
-                <p className={solarStyles.lastUpdate}>last Update: {lastSolarEdgeUpdate.toLocaleString()}</p>
+                <p className="text-center">last Update: {lastSolarEdgeUpdate.toLocaleString()}</p>
 
-                <Row className={solarStyles.chartRow}>
+                <Row className="border border-black mb-[10px] bg-white p-5">
                     <Line data={chartData} options={options as any} />
                 </Row>
-                <Row className={solarStyles.controlsRow}>
-                    <Col xs={3} className={solarStyles.daysCol}>Number of Days (1-10) : {numDays} </Col>
-                    <Col xs={7} className={solarStyles.sliderCol}>
+                <Row className="border border-black mb-[10px]">
+                    <Col xs={3} className="m-[15px]">Number of Days (1-10) : {numDays} </Col>
+                    <Col xs={7} className="bg-white p-5 pl-10 pb-[30px]">
                         <Slider
                             min={1}
                             max={10}
@@ -476,7 +475,7 @@ export default function SolarEdge() {
                         />
                     </Col>
                 </Row>
-                <Row className={solarStyles.dateRow}>
+                <Row className="border border-black mb-[10px]">
                     <Col xs={2}>
                         <input type="checkbox" checked={useStartDate} onChange={(e) => handleUseStartDate(e)} /> Use startDate
                     </Col>
@@ -493,40 +492,40 @@ export default function SolarEdge() {
                         <p>Selected range: {range.from.toLocaleString()} to {range.to.toLocaleString()} ( {range.days} days, {range.hrs} hrs) </p>
                     </Col>
                 </Row>
-                <Row className={solarStyles.unitInfoRow}>
+                <Row className="border border-black mb-[100px]">
                     <Col xs={12}>
                         {info && (
                             <div>
                                 <h3>Unit Info</h3>
-                                <table className={solarStyles.unitInfoTable}>
+                                <table className="border-collapse w-[300px] bg-white p-5">
                                     <tbody>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Signature</td>
-                                            <td style={{}}>{info.signature}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Signature</td>
+                                            <td>{info.signature}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Model ID</td>
-                                            <td style={{}}>{info.modelId}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Model ID</td>
+                                            <td>{info.modelId}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Block Length</td>
-                                            <td style={{}}>{info.blockLength}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Block Length</td>
+                                            <td>{info.blockLength}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Manufacturer</td>
-                                            <td style={{}}>{info.manufacturer}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Manufacturer</td>
+                                            <td>{info.manufacturer}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Model</td>
-                                            <td style={{}}>{info.model}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Model</td>
+                                            <td>{info.model}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Version</td>
-                                            <td style={{}}>{info.version}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Version</td>
+                                            <td>{info.version}</td>
                                         </tr>
-                                        <tr>
-                                            <td className={solarStyles.unitInfoLabel}>Serial</td>
-                                            <td style={{}}>{info.serial}</td>
+                                        <tr className="border border-black">
+                                            <td className="font-bold">Serial</td>
+                                            <td>{info.serial}</td>
                                         </tr>
                                     </tbody>
                                 </table>

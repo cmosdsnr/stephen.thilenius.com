@@ -6,9 +6,10 @@ import { useForm } from "react-hook-form"
 import { useData } from '../contexts/DataContext'
 import { useNavigate } from 'react-router-dom'
 import { useModal, ModalType } from "./Modals"
-import styles from './modals.module.css'
 import mySvg from '../images/314px-Google__G__Logo.svg_-294x300.png'
 
+const warnClass = "mb-5 border border-[rgb(191,22,80)] [border-left-width:10px] [border-left-color:rgb(236,89,144)] bg-[rgb(251,236,242)]"
+const errorClass = "text-red-600 text-[11px] -mt-[15px] -mb-[5px] pb-0"
 
 const LoginModal = () => {
     const [isError, setIsError] = useState(false);
@@ -53,10 +54,10 @@ const LoginModal = () => {
         <Modal
             onRequestClose={() => closeModal()}
             style={{ overlay: { backgroundColor: 'rgba(255, 255, 255, 0.5)' } }}
-            className={styles.modal}
+            className="login-modal-overlay"
             isOpen={true}
         >
-            <Card className={styles.loginCard}>
+            <Card className="bg-blue-100">
                 <Card.Body>
                     <h2 className="text-center mb-4">Login</h2>
 
@@ -65,24 +66,24 @@ const LoginModal = () => {
                         <Form.Group id="email">
                             <Form.Label>Email</Form.Label>
                             <Form.Control
-                                className={errors.email ? styles.warn : undefined}
+                                className={errors.email ? warnClass : undefined}
                                 type="email"
                                 {...register('email', { required: true, pattern: /^\S+@\S+$/i })}
                                 required
                             />
-                            {errors.email && <p className={styles.error}>Must be a valid Email address</p>}
+                            {errors.email && <p className={errorClass}>Must be a valid Email address</p>}
                         </Form.Group>
                         <Form.Group id="password">
                             <Form.Label>password</Form.Label>
                             <Form.Control
-                                className={errors.password ? styles.warn : undefined}
+                                className={errors.password ? warnClass : undefined}
                                 type="password"
                                 {...register('password', { required: true, pattern: /^.{8,}$/i })}
                                 required
                             />
-                            {errors.password && <p className={styles.error}>Password must be 8 or more characters</p>}
+                            {errors.password && <p className={errorClass}>Password must be 8 or more characters</p>}
                         </Form.Group>
-                        <Button className={`w-100 ${styles.loginButton}`} type="submit">Login</Button>
+                        <Button className="w-100 mt-5" type="submit">Login</Button>
                     </Form>
                     <div className="w-100 text-center mt-3">
                         <OnClickLink fn={() => openModal(ModalType.ResetPassword)}>Forgot Password?</OnClickLink>
@@ -91,7 +92,7 @@ const LoginModal = () => {
                         Need an Account? <OnClickLink fn={() => openModal(ModalType.SignUp)}>Sign Up</OnClickLink>
                     </div>
                     <div className="w-100 text-center mt-3"><b>OR</b></div>
-                    <Button className="w-100" onClick={async () => handleGoogleLogin()}><img src={mySvg} className={styles.googleLogo} alt="Google Logo" /> Sign in with Google</Button>
+                    <Button className="w-100" onClick={async () => handleGoogleLogin()}><img src={mySvg} className="w-[30px] mr-5" alt="Google Logo" /> Sign in with Google</Button>
 
                 </Card.Body>
             </Card>

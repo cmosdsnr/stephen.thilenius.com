@@ -1,3 +1,25 @@
+/* Tailwind theme variables + utilities — no preflight, to avoid Bootstrap CSS reset conflicts */
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
+/* Patents.tsx uses data-toggle="collapse" which causes Tailwind to generate
+   .collapse { visibility: collapse }, breaking Bootstrap's Navbar.Collapse.
+   Restore Bootstrap's collapse behavior: */
+.collapse {
+    visibility: visible;
+}
+
+/* react-modal positioning — must be a global class, used as Modal className prop */
+.login-modal-overlay {
+    width: 400px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+}
+
 .home .post a {
     text-decoration: none;
     font-size: 40px;

@@ -8,10 +8,10 @@ interface Props {
     inverse?: boolean
 }
 
-export const MyFontAwesomeIcon = ({ icon, inverse }: Props) => {
+export const MyFontAwesomeIcon = React.memo(function MyFontAwesomeIcon({ icon, inverse }: Props) {
     const width = useWindow();
     const showIcons = width > 950 || width < 768;
     return (
         <>{showIcons && <FontAwesomeIcon icon={icon} inverse={inverse} />}</>
     )
-}
+})

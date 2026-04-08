@@ -15,7 +15,6 @@ import './admin.css';
 import { API } from '../../api';
 import { DateTime } from 'luxon';
 import { chartPalette, chartBg, chartBlue, cardBg } from '../../tokens';
-import pmStyles from './PowerMeter.module.css';
 
 import { Line } from 'react-chartjs-2';
 import type { ChartOptions, ChartData } from 'chart.js';
@@ -261,7 +260,7 @@ export default function PowerMeter() {
             </Row>
 
             {/* Chart */}
-            <Row style={{ backgroundColor: chartBg }} className={pmStyles.chartRow}>
+            <Row style={{ backgroundColor: chartBg }} className="p-5 mb-5">
                 <Col>
                     {hoursLoading && (
                         <Spinner animation="border" role="status">
@@ -539,15 +538,15 @@ function DetailsDashboard() {
             </Table>
 
             <h5>Frequency Scan</h5>
-            <div className={pmStyles.scanChart}>
+            <div className="h-[200px] bg-white p-[10px]">
                 <Line data={scanChartData} options={scanChartOptions} />
             </div>
             <h5>dft </h5>
-            <div className={pmStyles.scanChart}>
+            <div className="h-[200px] bg-white p-[10px]">
                 <Line data={dftChartData} options={scanChartOptions} />
             </div>
             <h5>dft </h5>
-            <div className={pmStyles.scanChart}>
+            <div className="h-[200px] bg-white p-[10px]">
                 <Line data={dftChartDataB} options={scanChartOptions} />
             </div>
         </div>
@@ -645,7 +644,7 @@ const StaggeredChannelPlots = () => {
                 return (
                     <div
                         key={idx}
-                        className={pmStyles.waveformCard}
+                        className="h-[200px] p-2 rounded [box-shadow:0_2px_4px_rgba(0,0,0,0.1)]"
                     >
                         <Line data={data} options={options} />
                     </div>

@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react"
-import styles from "./slideshow.module.css"
 
 import img1 from "../../images/SlideShow/Brandenburg.png"
 import img2 from "../../images/SlideShow/Daughters.png"
@@ -40,23 +39,23 @@ export const Slideshow = () => {
     }, [index]);
 
     return (
-        <div className={styles.slideshow}>
+        <div className="mx-auto overflow-hidden max-w-[500px] pt-10">
             <div
-                className={styles.slideshowSlider}
+                className="whitespace-nowrap transition-all duration-1000 ease-in-out"
                 style={{ transform: `translate3d(${-index * 100}%, 0, 0)` }}
             >
                 {images.map((backgroundColor, index) => (
-                    <div className={styles.slide} key={index}>
-                        <img className={styles.slideshowImage} src={images[index]} alt="" />
+                    <div className="inline-block h-[400px] w-full" key={index}>
+                        <img className="pt-5 rounded-[40px] w-full" src={images[index]} alt="" />
                     </div>
                 ))}
             </div>
 
-            <div className={styles.slideshowDots}>
+            <div className="text-center">
                 {images.map((_, idx) => (
                     <div
                         key={idx}
-                        className={`${styles.slideshowDot}${index === idx ? ' ' + styles.active : ''}`}
+                        className={`inline-block h-5 w-5 rounded-full cursor-pointer mt-[15px] mx-[7px] mb-0 ${index === idx ? 'bg-[#6a0dad]' : 'bg-[#c4c4c4]'}`}
                         onClick={() => setIndex(idx)}
                     />
                 ))}

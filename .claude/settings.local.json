@@ -16,7 +16,14 @@
       "Bash(yarn build:*)",
       "Bash(powershell -Command 'Get-ChildItem -Path '\\\\''src'\\\\'' -Filter '\\\\''*.jsx'\\\\'' -Recurse | Rename-Item -NewName { $_.Name -replace '\\\\''\\\\.jsx$'\\\\'', '\\\\''.tsx'\\\\'' }')",
       "Bash(find . -name \"*.jsx\" -exec bash -c 'mv \"$1\" \"${1%.jsx}.tsx\"' _ {} \\\\;)",
-      "Bash(yarn add:*)"
+      "Bash(yarn add:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(yarn tailwindcss:*)",
+      "Bash(./node_modules/.bin/tailwindcss init:*)",
+      "Bash(wc:*)",
+      "Bash(grep -l \"\" \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/css/\"*.css)",
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\"; head -5 \"{}\"')",
+      "Bash(ls:*)"
     ]
   }
 }
