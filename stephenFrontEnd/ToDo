@@ -6,7 +6,7 @@
   4. Consolidate to one chart library — AG Charts is more modern; drop Chart.js and react-charts
   5. Centralize API endpoints — one api.ts constants file, referenced everywhere
 
-  Medium effort, meaningful improvement:
+  Medium effeffort, meaningful improvement:
 
   6. Migrate .jsx → .tsx — especially the game components; use proper prop interfaces
   7. Replace console.log with a real error boundary — one <ErrorBoundary> component wrapping routes, plus toast notifications for user-facing errors
