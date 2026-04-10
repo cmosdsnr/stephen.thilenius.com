@@ -1,48 +1,38 @@
-// there are missing bins because there are no words that match the missing accuracy value
-
-
-// USED ALL WORDS TO CALCULATE
-// export const firstGuessX = "LARES"
-// export const nextGuessX =
-// {
-//     '0': 'TONIC', '1': 'HOIST', '2': 'KNOUT', '3': 'TONIC', '4': 'POINT', '5': 'NETOP', '6': 'DICOT', '7': 'DONUT',
-//     '8': 'POINT', '9': 'COUNT', '10': 'SHOUT', '11': 'GROUT', '12': 'DROIT', '13': 'POISE', '14': 'WEIRD', '15': 'DICOT',
-//     '16': 'SWITH', '17': 'BRUIT', '18': 'CYTON', '19': 'GUYOT', '20': 'TONDI', '21': 'MEINY', '22': 'VOGUE', '23': 'KOMBU',
-//     '24': 'DICOT', '25': 'DOWIE', '26': 'COMFY', '27': 'TONIC', '28': 'SNATH', '29': 'STOAI', '30': 'MEANT', '31': 'STAPH',
-//     '32': 'MEANT', '33': 'CNIDA', '34': 'DEPTH', '35': 'ASDIC', '36': 'BRANT', '37': 'CHANT', '38': 'GRIPT', '39': 'TREAD',
-//     '40': 'SWIPE', '41': 'SHARP', '42': 'TUMID', '43': 'ADAPT', '44': 'BRAES', '45': 'BIOTA', '46': 'SPUTA', '47': 'ORBIT',
-//     '48': 'ADMIT', '49': 'AALII', '50': 'AAHED', '51': 'AUDIO', '53': 'CAMPI', '54': 'MINTY', '55': 'SYNTH', '56': 'TUNIC',
-//     '57': 'CUMIN', '58': 'THUMP', '59': 'CASTE', '60': 'TOWNY', '61': 'DUSTY', '62': 'COMPT', '63': 'ROBIN', '64': 'AMBRY',
-//     '65': 'RUTIN', '66': 'CHIRP', '67': 'AALII', '69': 'RIGHT', '70': 'BOSKY', '71': 'EJECT', '72': 'TYPIC', '73': 'SKIMO',
-//     '74': 'BUNDT', '75': 'BEGAT', '76': 'CAMPI', '77': 'AAHED', '78': 'DUTCH', '79': 'AAHED', '80': 'BATCH', '81': 'COLIN',
-//     '82': 'THIOL', '83': 'POULT', '84': 'TOILE', '85': 'SPELT', '86': 'DWELT', '87': 'DOUBT', '88': 'SITUP', '89': 'PILOT',
-//     '90': 'DROIT', '91': 'BLINK', '92': 'BILLS', '93': 'FOLIC', '95': 'DUOMI', '96': 'FLUOR', '97': 'BUTTY', '98': 'EOSIN',
-//     '99': 'BIRCH', '100': 'AAHED', '101': 'BUTCH', '102': 'ANILE', '104': 'AAHED', '105': 'ABAMP', '106': 'BUTLE', '108': 'ALOIN',
-//     '109': 'STALL', '110': 'CLANG', '111': 'PLATE', '112': 'SHALT', '113': 'SLEPT', '114': 'BILGE', '116': 'ABMHO', '117': 'GLIAL',
-//     '118': 'AALII', '119': 'ARYLS', '120': 'REGAL', '122': 'AAHED', '123': 'ALTER', '125': 'ARLES', '126': 'AMIGO', '127': 'AAHED',
-//     '129': 'FERAL', '130': 'BUTLE', '135': 'HILLY', '136': 'STOAI', '137': 'BUILT', '138': 'BELCH', '139': 'ABOVE', '140': 'DUMPY',
-//     '141': 'BANDA', '142': 'BUTYL', '143': 'BIGHT', '144': 'MYLAR', '146': 'AAHED', '150': 'ROWTH', '152': 'BUTLE', '153': 'ABAMP',
-//     '155': 'CHAFE', '156': 'APACE', '158': 'AAHED', '162': 'CYTON', '163': 'ABOUT', '164': 'PINOT', '165': 'TOGUE', '166': 'ADOWN',
-//     '167': 'UNWIT', '168': 'BOVID', '169': 'AAHED', '170': 'BOSUN', '171': 'AALII', '173': 'AAHED', '174': 'DUSTY', '176': 'AHING',
-//     '177': 'BEGIN', '178': 'AAHED', '180': 'ACHOO', '182': 'ABIDE', '186': 'ADDAX', '188': 'ABOUT', '189': 'TOMAN', '190': 'AAHED',
-//     '191': 'DONUT', '192': 'THANE', '193': 'BERTH', '194': 'DINKY', '195': 'ABACA', '198': 'TODAY', '200': 'DUMPY', '201': 'ABAYA',
-//     '203': 'AAHED', '207': 'DUNAM', '209': 'DUMPY', '216': 'MINTY', '217': 'AALII', '218': 'MUNCH', '219': 'CHETH', '220': 'AAHED',
-//     '222': 'WYTED', '223': 'BUTLE', '224': 'ACNED', '225': 'BAIZA', '227': 'AAHED', '231': 'CADGY', '232': 'AAHED', '234': 'BUCKO',
-//     '236': 'ABIDE', '237': 'AAHED', '240': 'DUMPY', '242': 'AAHED'
-// }
-
-
-// USED FREQUENT WORDS TO CALCULATE
+/**
+ * @file Guesses.tsx
+ * @description Pre-computed optimal first and second guesses for the Wordle solver.
+ *
+ * These values were computed offline by running the full evaluation algorithm against
+ * the short word list (2,309 common Wordle solutions) using letter-frequency tiebreaking.
+ *
+ * Using pre-computed guesses avoids the expensive web-worker evaluation for the first
+ * two steps, since the first guess is always the same and the second guess depends only
+ * on the 243 possible accuracy patterns returned by the first guess.
+ */
 
 /**
- * First guess to use at start of game (used in reset).
+ * The optimal first word to guess at the start of every game.
+ * Chosen because it minimises the standard deviation of remaining-word counts
+ * across all 243 possible accuracy patterns when evaluated against the short word list.
+ *
  * @type {string}
  */
 export const firstGuess = "RAISE"
 
+/** Lookup type: maps a bin number (accuracy pattern, 0–242) to the best second guess. */
+type NextGuessType = { [key: string]: string }
+
 /**
- * Second guess to use at step 2.
- * @type {Object}
+ * Pre-computed optimal second guess for each possible outcome of the first guess.
+ *
+ * The key is the bin number of the first guess's accuracy pattern, encoded as a
+ * base-3 number: `bin = acc[0]×81 + acc[1]×27 + acc[2]×9 + acc[3]×3 + acc[4]`.
+ * Missing keys represent accuracy patterns that cannot occur with the chosen first guess.
+ *
+ * Example: if "RAISE" returns [0,0,0,0,0] (all gray), the bin is 0, and `nextGuess["0"]`
+ * gives the best second guess for that outcome.
+ *
+ * @type {NextGuessType}
  */
 export const nextGuess: NextGuessType = {
     "0": "NOBLY", "1": "TOLED", "2": "CLOUT", "3": "SLOTH", "4": "TOLED", "5": "PUNTO", "6": "LUSTY", "7": "HELOT",

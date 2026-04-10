@@ -112,7 +112,7 @@ export const evaluate = (
                     rankWeHaveNotYetBeat--;
 
 
-                stats.topRanked.splice(rankWeHaveNotYetBeat + 1, 0, {
+                stats.topRanked.splice(rankWeHaveNotYetBeat, 0, {
                     std,
                     word: dictionaryWordToAnalyze,
                     letterScore,

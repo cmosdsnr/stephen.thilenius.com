@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { GameStep } from './types';
+import { GameStep, RankedGuess } from './types';
 import { firstGuess } from '../src/Guesses';
 import { updateNextList } from './wordleUtils';
 import { useWords } from './useWords';
-import { useWordEvaluator } from './useWordEvaluator';
 
 // starting template for current game situation
 // the filled in template is saved onto 'gameData' after every guess and can be retrieved with 'backOneStep'
@@ -37,15 +36,13 @@ const template: GameStep = {
 /**
  * Hook to manage Wordle game state: tracking steps, resetting, and backtracking.
  */
-export function useGameState() {
+export function useGameState(getNextBestWord: (c: GameStep, idx: number) => Promise<RankedGuess>) {
     const [current, setCurrent] = useState<GameStep>({ ...template });
     const [gameData, setGameData] = useState<GameStep[]>([]);
     const [numberWords, setNumberWords] = useState(4);
     const [working, setWorking] = useState(0); // progress step (0-5)
 
     const { letterCounts, allowedSolutions } = useWords();
-
-    const { getNextBestWord } = useWordEvaluator();
 
     let c: GameStep = { ...template };
 

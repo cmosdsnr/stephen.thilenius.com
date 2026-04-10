@@ -18,7 +18,6 @@ export function useWordEvaluator() {
    * Evaluate a word and return its ranking based on current game state.
    */
   const getWordDeviation = (w: string, list: string[], valueMap: number[][]): RankedGuess => {
-    debugger;
     let stats: Stats = evaluate(list, [w], valueMap);
     return stats.topRanked[0];
   };
@@ -96,6 +95,7 @@ export function useWordEvaluator() {
     topRanked,
     getWordDeviation,
     getNextBestWord,
+    getBestStartWord,
   };
 }
 

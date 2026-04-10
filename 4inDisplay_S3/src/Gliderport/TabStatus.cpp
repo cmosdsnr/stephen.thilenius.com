@@ -12,7 +12,7 @@
 #include "Report.h"
 #include "Buzzer.h"
 #include "Networks.h"
-#include "EpromData.h"
+#include "Gliderport/EpromData.h"
 
 #include "lwip/etharp.h"
 #include "lwip/netif.h"

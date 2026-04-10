@@ -1,5 +1,6 @@
 {
   "folders": [
+    { "path": ".", "name": "____ 🗂 Root" },
     { "path": "stephenFrontEnd", "name": "____ 🖥 Frontend" },
     { "path": "stephenBackEnd", "name": "____ ⚙️ Backend" },
     { "path": "4inDisplay_S3", "name": "____ 🔧 ESP32 Firmware (PlatformIO)" },
@@ -7,6 +8,13 @@
     { "path": "sprinklerApp", "name": "____ 🌿 Sprinkler App (React Native)" }
   ],
  "settings": {
+  "files.exclude": {
+    "stephenFrontEnd": true,
+    "stephenBackEnd": true,
+    "4inDisplay_S3": true,
+    "espserver": true,
+    "sprinklerApp": true
+  },
   "editor.formatOnSave": true,
     "workbench.tree.renderIndentGuides": "always",
     "workbench.tree.enableStickyScroll": true

@@ -4,7 +4,7 @@ import { firstGuess, nextGuess } from '../src/Guesses';
 import { useWords } from './useWords';
 import { useGameState } from './useGameState';
 import { useWordEvaluator } from './useWordEvaluator';
-import { updateAllAccuracy } from './wordleUtils';
+import { updateAllAccuracy, updateNextList } from './wordleUtils';
 import { GameStep, LetterCounts, RankedGuess } from './types';
 
 /**
@@ -26,6 +26,7 @@ interface WordleContextType {
     backOneStep: () => void;
     getWordDeviation: (w: string, list: string[], valueMap: number[][]) => RankedGuess;
     getBestSecondWords: () => Promise<any>;
+    topRanked: RankedGuess[];
     reset: () => void;
     loadLongList: () => Promise<void>;
     loadShortList: () => Promise<void>;
@@ -58,6 +59,8 @@ interface Props {
 export function WordleProvider({ children }: Props): JSX.Element {
     const { allWords, allowedSolutions, letterCounts, isWord, checkWord, loadLongList, loadShortList } = useWords();
 
+    const { getWordDeviation, topRanked, getNextBestWord } = useWordEvaluator();
+
     const {
         current,
         gameData,
@@ -70,9 +73,7 @@ export function WordleProvider({ children }: Props): JSX.Element {
         nextWord,
         recalculateWord,
         working,
-    } = useGameState();
-
-    const { getWordDeviation } = useWordEvaluator();
+    } = useGameState(getNextBestWord);
 
     useEffect(() => {
         if (allWords.length > 0) reset();
@@ -129,12 +130,28 @@ export function WordleProvider({ children }: Props): JSX.Element {
         numberWords,
         changeNumberWords: (n) => changeNumberWords(n),
 
-        replaceWord: (word) => { },
+        replaceWord: (word: string) => {
+            const s = [...gameData];
+            const c: GameStep = JSON.parse(JSON.stringify(s[s.length - 1]));
+            c.word = word;
+            c.accuracies = Array(8).fill(0).map(() => Array(5).fill(0));
+            for (let i = 0; i < numberWords; i++) {
+                word.split('').forEach((v, j) => {
+                    if (c.matched[i].includes(v)) c.accuracies[i][j] = 1;
+                    if (c.exactMatched[i][j] === v) c.accuracies[i][j] = 2;
+                });
+                updateNextList(c, i);
+            }
+            s[s.length - 1] = c;
+            setGameData(s);
+            setCurrent(c);
+        },
         checkWord,
         isWord,
         backOneStep,
         getWordDeviation,
         getBestSecondWords: async () => [],
+        topRanked,
         reset,
         loadLongList,
         loadShortList,

@@ -1,39 +1,129 @@
-# ESP32-S3 with Display module
+# ESP32-S3 Firmware (4inDisplay_S3)
 
-## To change the target compilation
+Multi-purpose ESP32-S3 firmware with a 4-inch ILI9488 TFT touchscreen display. A single codebase supports multiple independent deployment targets (builds), each compiled in via a `-D` flag in `platformio.ini`. All builds share the same hardware abstraction, WebSocket/OTA server, FTP, and display framework; only the application-layer tabs and peripheral drivers change.
 
-- change platformio.ini -D XXX
-- add tabs.h defines for NUMBER_TABS, and Tab names
-- add tabs into tabs.cpp defines
+---
 
-## To program from laptop
+## Compile Targets (Builds)
 
-From `c:\git\electronic\PlatformIO` run:
+Set exactly one of the following flags in `platformio.ini` under `build_flags`. All others must be commented out.
+
+### `-D GLIDERPORT`
+Weather station display deployed at the gliderport site. Communicates with `gp_pi3_server` (Raspberry Pi 3 at `192.168.88.11:8080`).
+
+- **Wind** — reed-switch anemometer on two GPIO inputs (speed + direction). A 2 ms hardware timer ISR applies hysteresis filtering and records edge timings. Each full anemometer rotation yields speed (`1337.6 / period` → mph) and direction (`143 − (360 × dirLow / speedHigh)` → degrees).
+- **Temperature / Humidity** — DHT11, sampled every 5 s.
+- **Barometric pressure / Temperature** — BMP280 over I2C, sampled every 5 s.
+- **Pi 3 registration** — on boot, sends `GET http://192.168.88.11:8080/espIP/?ip=<ip>` so the Pi 3 always knows the ESP32's current IP.
+- **HTTP API** — `GET /data` returns JSON: `{ bmp: {t, p, c}, dht: {t, h, c}, wind: {s, a, c} }`.
+- **Display tabs** — Gliderport (live speed/direction readout), Rose (wind rose), Status.
+
+### `-D DESK`
+Desktop dashboard unit used at a desk/office location.
+
+- **Wind** — fetches wind data from a remote weather station (Davis and Ultimeter protocol support). Displays live readings and history on the Wind tab.
+- **Power** — fetches 24-hour power consumption data from a remote API and renders a line chart with per-channel toggle buttons. JSON is allocated from PSRAM to keep the SSL heap free.
+- **Shot scheduler** — tracks a recurring GLP shot schedule (default 4-day window). Persists the next scheduled time to EEPROM. Beeps every 10 s when overdue, regardless of the active tab.
+- **Devices** — polls the ESP device registry (Cloudflare Worker) and lists all active ESP32/ESP01/other devices with IP and last-seen time. Refreshes every 60 s.
+- **Display tabs** — Wind, Power, Shot, Devices.
+
+### `-D COFFEE`
+Coffee machine controller.
+
+- Controls three relays: **lights** (auto-triggered by PIR motion sensor, 3-minute timeout), **water fill** (timed), **lock** (momentary + hold relay pair).
+- Motion sensor input auto-activates the lights relay.
+- **Display tab** — Coffee (three icon buttons: lights, fill, lock).
+
+### `-D GARAGE`
+Garage door controller.
+
+- **Door relay** — simulates a button press (relay HIGH for 1 s, debounced to 1.5 s). Controlled from the touchscreen.
+- **Distance sensor** — used to determine door open/closed state.
+- **Light relay** and **power relay** — independently switched from the display.
+- **Display tab** — Garage (door, lights, power buttons with status bar).
+
+### `-D SPRINKLER`
+Garden sprinkler controller.
+
+- Drives up to 5 sprinkler channels (CH1–CH5) plus a pump relay via GPIO.
+- Schedule persisted to a data file on LittleFS (loaded on boot, updated via WebSocket).
+- Schedule logic: 14-day cycle with configurable per-channel day/duration/start entries. Runs entirely on-device — no cloud dependency.
+- **Display tabs** — Sprinkler (zone controls), Status.
+
+### `-D POWERMETER`
+Standalone power meter display (early/work-in-progress build).
+
+- Reads power consumption data and displays it on a dedicated tab.
+- **Display tab** — Power Meter.
+
+---
+
+## Switching Builds
+
+In `platformio.ini`, comment out all `-D` target flags and uncomment the one you want:
+
+```ini
+build_flags =
+    ; -D COFFEE
+    ; -D SPRINKLER
+    -D DESK
+    ; -D GLIDERPORT
+    ; -D POWERMETER
+```
+
+Also update `include/*/tabs.h` (the active build's directory) to set `NUMBER_TABS` and the tab name list, and ensure `src/*/Tabs.cpp` has the matching tab instantiations.
+
+---
+
+## Building & Flashing
+
+Normal workflow via PlatformIO (VS Code PlatformIO extension or CLI):
+
+```bash
+# Build + upload firmware
+pio run --target upload
+
+# Upload LittleFS filesystem (espserver UI)
+pio run --target uploadfs
+```
+
+### Manual esptool commands (COM8, ESP32-S3)
+
+```bash
+# Verify firmware hash
+md5sum .\.pio\build\Display\firmware.bin
+
+# Erase flash completely
+python -m esptool --chip esp32s3 --port COM8 erase_flash
+
+# Write partition table
+python -m esptool --chip esp32s3 --port COM8 write_flash 0x8000 .\.pio\build\Display\partitions.bin
+
+# Read back partition table for inspection
+python -m esptool --chip esp32s3 --port COM8 read_flash 0x8000 0x7000 partitions.bin
+hexdump -C .\partitions.bin
+```
+
+---
+
+## Syncing to Laptop
+
+From `c:\git\electronic\PlatformIO` (desktop):
 
 ```bash
 git add .
-git commit -m "Vendor SimpleFTPServer library with OPTS and Debug patches"
+git commit -m "your message"
 git push gdrive --mirror
 ```
 
-On the laptop from `e:\git\electronic\PlatformIO` run:
+On the laptop from `e:\git\electronic\PlatformIO`:
 
 ```bash
 git fetch origin
 git reset --hard origin/master
 ```
 
-## Selection
-
-Select the device to compile to in platformio.ini in the build flags
-
-## manual compilation
-
-- md5sum  .\.pio\build\Display\firmware.bin 
-- python -m esptool --chip esp32s3 --port COM8 erase_flash
-- python -m esptool --chip esp32s3 --port COM8 write_flash 0x8000 .\.pio\build\Display\partitions.bin  
-- python -m esptool --chip esp32s3 --port COM8 read_flash 0x8000 0x7000 partitions.bin
-- hexdump -C .\partitions.bin
+---
 
 ## 36-Pin ESP32 Links
 

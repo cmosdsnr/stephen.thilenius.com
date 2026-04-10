@@ -26,7 +26,7 @@ const char *vNames[NUM_VARS] = {"local Time", "epoch", "roof temp count", "roof 
 void updateRequest()
 {
     doc.clear();
-    doc["code"] = SocketCode::REQ_RES;
+    doc["code"] = SocketCode::VARIABLES;
 
     for (int i = 0; i < NUM_VARS; i++)
         doc["variableNames"][i] = vNames[i];
@@ -74,8 +74,6 @@ void handleMessage()
         break;
     case ExtendedSocketCode::UPDATE:
         updateRequest();
-        break;
-    case SocketCode::REQ_RES:
         break;
     default:
         break;

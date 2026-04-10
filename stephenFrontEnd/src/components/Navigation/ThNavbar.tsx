@@ -151,19 +151,19 @@ export default function ThNavbar() {
 
                                 {/* Documentation dropdown menu */}
                                 <NavDropdown title="Documents" id="mynav">
-                                    <NavDropdown.Item href={"/documentation/frontend"}>
+                                    <NavDropdown.Item href={"/docs/frontend/index.html"} target="_blank" rel="noopener noreferrer">
                                         <MyFontAwesomeIcon icon={faFileLines} /><span style={{ paddingLeft: "12px" }} >FrontEnd </span>
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href={"/documentation/backend"}>
+                                    <NavDropdown.Item href={"/docs/backend/index.html"} target="_blank" rel="noopener noreferrer">
                                         <MyFontAwesomeIcon icon={faFileCode} /><span style={{ paddingLeft: "12px" }} >BackEnd</span>
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href={"/documentation/esp32"}>
+                                    <NavDropdown.Item href={"/docs/esp32/index.html"} target="_blank" rel="noopener noreferrer">
                                         <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >Firmware</span>
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href={"/documentation/espServer"}>
+                                    <NavDropdown.Item href={"/docs/espServer/index.html"} target="_blank" rel="noopener noreferrer">
                                         <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >ESP Server</span>
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href={"/documentation/sprinklerApp"}>
+                                    <NavDropdown.Item href={"/docs/sprinklerApp/index.html"} target="_blank" rel="noopener noreferrer">
                                         <MyFontAwesomeIcon icon={faBook} /><span style={{ paddingLeft: "12px" }} >Sprinkler App</span>
                                     </NavDropdown.Item>
                                 </NavDropdown>

@@ -17,7 +17,7 @@
  */
 void saveCameraMac(uint8_t cameraNumber, uint8_t *n)
 {
-    uint16_t base = cameraNumber == 1 ? CAMERA1_MAC_ADDRESS : CAMERA2_MAC_ADDRESS;
+    uint16_t base = cameraNumber == 1 ? ADDR_CAMERA1_MAC : ADDR_CAMERA2_MAC;
     EEPROM.writeBytes(base, n, 6);
     EEPROM.commit();
 }
@@ -31,7 +31,7 @@ void saveCameraMac(uint8_t cameraNumber, uint8_t *n)
 void loadCameraMac(uint8_t cameraNumber, uint8_t *n)
 {
     //! get the current timestamp
-    uint16_t base = cameraNumber == 1 ? CAMERA1_MAC_ADDRESS : CAMERA2_MAC_ADDRESS;
+    uint16_t base = cameraNumber == 1 ? ADDR_CAMERA1_MAC : ADDR_CAMERA2_MAC;
     EEPROM.readBytes(base, n, 6);
 }
 
@@ -43,7 +43,7 @@ void loadCameraMac(uint8_t cameraNumber, uint8_t *n)
  */
 void saveCameraIP(uint8_t cameraNumber, IPAddress ip)
 {
-    uint16_t base = cameraNumber == 1 ? CAMERA1_IP_ADDRESS : CAMERA2_IP_ADDRESS;
+    uint16_t base = cameraNumber == 1 ? ADDR_CAMERA1_IP : ADDR_CAMERA2_IP;
     char n[4];
     n[0] = ip[0];
     n[1] = ip[1];
@@ -62,7 +62,7 @@ void saveCameraIP(uint8_t cameraNumber, IPAddress ip)
  */
 IPAddress loadCameraIP(uint8_t cameraNumber)
 {
-    uint16_t base = cameraNumber == 1 ? CAMERA1_IP_ADDRESS : CAMERA2_IP_ADDRESS;
+    uint16_t base = cameraNumber == 1 ? ADDR_CAMERA1_IP : ADDR_CAMERA2_IP;
     char n[4];
     EEPROM.readBytes(base, n, 4);
     IPAddress ip;

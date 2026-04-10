@@ -141,6 +141,7 @@ export function InputWordPopover({
 
     // Reset sorted cache if inputs change
     useEffect(() => {
+        setShow(false);
         if (!current) return;
         const words = current.inputLists[wordIndex] || [];
         const letterValue = current.letterValue;
@@ -200,41 +201,37 @@ export function InputWordPopover({
                 <div>Possible Words BEFORE: {words.length}</div>
                 {!show && (
                     <div style={{ fontSize: "0.85em" }}>
-                        {[...words]
-                            .map(word => ({ word, deviation: getDeviation(word, words, letterValue).std }))
-                            .sort((a, b) => a.deviation - b.deviation)
-                            .slice(0, 8)
-                            .map(({ word, deviation }, i, arr) =>
-                                i % 5 === 4 || i === arr.length - 1
-                                    ? (
-                                        <span
-                                            key={i}
-                                            onClick={() => replaceWord(word)}
-                                            style={{
-                                                backgroundColor: getHeatmapColor(deviation, deviation),
-                                                padding: "2px",
-                                                borderRadius: "3px",
-                                                marginRight: "4px"
-                                            }}
-                                        >
-                                            {word}<br />
-                                        </span>
-                                    )
-                                    : (
-                                        <span
-                                            key={i}
-                                            onClick={() => replaceWord(word)}
-                                            style={{
-                                                backgroundColor: getHeatmapColor(deviation, deviation),
-                                                padding: "2px",
-                                                borderRadius: "3px",
-                                                marginRight: "4px"
-                                            }}
-                                        >
-                                            {word},
-                                        </span>
-                                    )
-                            )}
+                        {sorted.slice(0, 8).map(({ word, deviation }, i, arr) =>
+                            i % 5 === 4 || i === arr.length - 1
+                                ? (
+                                    <span
+                                        key={i}
+                                        onClick={() => replaceWord(word)}
+                                        style={{
+                                            backgroundColor: getHeatmapColor(deviation, maxDeviation),
+                                            padding: "2px",
+                                            borderRadius: "3px",
+                                            marginRight: "4px"
+                                        }}
+                                    >
+                                        {word}<br />
+                                    </span>
+                                )
+                                : (
+                                    <span
+                                        key={i}
+                                        onClick={() => replaceWord(word)}
+                                        style={{
+                                            backgroundColor: getHeatmapColor(deviation, maxDeviation),
+                                            padding: "2px",
+                                            borderRadius: "3px",
+                                            marginRight: "4px"
+                                        }}
+                                    >
+                                        {word},
+                                    </span>
+                                )
+                        )}
                     </div>
                 )}
             </div>
