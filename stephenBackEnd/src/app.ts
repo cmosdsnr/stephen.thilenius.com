@@ -117,10 +117,11 @@ app.use("/api", createApiRouter());
 });
 
 /** Serve static assets */
-app.use("/docs", express.static(path.join(__dirname, "/stephen/docs")));
-app.use("/sound", express.static(path.join(__dirname, "/stephen/sound")));
+app.use("/docs",    express.static(path.join(__dirname, "/stephen/docs")));
+app.use("/sound",   express.static(path.join(__dirname, "/stephen/sound")));
 app.use("/gallery", express.static(path.join(__dirname, "/stephen/gallery")));
-app.use("/", express.static(path.join(__dirname, "/stephen/frontend")));
+app.use("/cuda",    express.static(path.join(__dirname, "/stephen/public/CUDA")));
+app.use("/",        express.static(path.join(__dirname, "/stephen/frontend")));
 
 // -----------------------------------------------------------------------------
 /**
