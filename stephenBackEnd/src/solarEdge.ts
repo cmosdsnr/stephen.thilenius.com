@@ -370,19 +370,6 @@ const solarEdgeHours = async (req: Request, res: Response) => {
  * // Returns full day of power data with gap filling
  * ```
  */
-const despike = (data: number[], threshold = 1000): number[] => {
-  const result = [...data];
-  for (let i = 10; i < data.length - 10; i++) {
-    const before = data.slice(i - 10, i);
-    const after = data.slice(i + 1, i + 11);
-    const avgBefore = before.reduce((a, b) => a + b, 0) / 10;
-    const avgAfter = after.reduce((a, b) => a + b, 0) / 10;
-    if (Math.abs(data[i] - avgBefore) > threshold && Math.abs(data[i] - avgAfter) > threshold) {
-      result[i] = Math.round([...before, ...after].reduce((a, b) => a + b, 0) / 20);
-    }
-  }
-  return result;
-};
 
 const solarEdgeRange = async (req: Request, res: Response) => {
   const { from, to } = req.query;
@@ -425,7 +412,7 @@ const solarEdgeRange = async (req: Request, res: Response) => {
 
     log(__logFile, "solarEdgeRange", "found", records.length, "records,", ans.length / 240, "hours");
 
-    return res.json({ data: despike(ans), from, to, fromHour, toHour });
+    return res.json({ data: ans, from, to, fromHour, toHour });
   } catch (error) {
     return res.status(400).json({ error: "error retrieving range", activeHour, errorMsg: error });
   }
