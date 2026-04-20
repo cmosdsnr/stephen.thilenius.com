@@ -141,7 +141,7 @@ const connect = async () => {
           }
         },
       );
-
+      //   client.setTimeout(4_500);
     });
   }
 };
@@ -326,18 +326,30 @@ const solarEdgeHours = async (req: Request, res: Response) => {
   const hours = parseInt(req.query.hours as string);
   if (hours <= 0) return res.status(400).json({ error: "hours must be greater than 0", ...req.params });
 
-  let ans: any[] = [];
+  const fromMinute = (activeHour - hours) * 60;
+  const toMinute = activeHour * 60 + 59;
+
   try {
-    const record = await pb.collection("solarEdge").getFullList({
-      filter: `id >= "${ToId(activeHour - hours)}"`,
-      sort: "id", // Ensure the records are sorted in ascending order by id
+    const records = await pb.collection("solar").getFullList({
+      filter: `id >= "${ToId(fromMinute)}" && id <= "${ToId(toMinute)}"`,
+      sort: "id",
     });
-    record.forEach((r: any) => {
-      log(__logFile, "solarEdgeHours", "adding hour", r.id);
-      ans = [...ans, ...r.power];
-    });
-    log(__logFile, "solarEdgeHours", "adding hour", activeHour);
-    ans = [...ans, ...hour.slice(0, lastTick)];
+
+    const ans: number[] = [];
+    let lastVal = 0;
+    let recIdx = 0;
+
+    for (let m = fromMinute; m <= toMinute; m++) {
+      if (recIdx < records.length && parseInt(records[recIdx].id) === m) {
+        ans.push(...records[recIdx].ticks);
+        lastVal = records[recIdx].ticks[3];
+        recIdx++;
+      } else {
+        ans.push(lastVal, lastVal, lastVal, lastVal);
+      }
+    }
+
+    log(__logFile, "solarEdgeHours", "found", records.length, "records");
     return res.json(ans);
   } catch (error) {
     return res.status(400).json({ error: "solarEdge error retrieving hours", activeHour, errorMsg: error });
@@ -371,9 +383,9 @@ const solarEdgeRange = async (req: Request, res: Response) => {
   if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
     return res.status(400).json({ error: "Invalid date format" });
   }
+  const fromHour = Math.floor(fromDate.getTime() / 3600000);
+  const toHour = Math.floor(toDate.getTime() / 3600000);
 
-  const fromHour = Math.floor(fromDate.getTime() / 3_600_000);
-  const toHour = Math.floor(toDate.getTime() / 3_600_000);
   const fromMinute = fromHour * 60;
   const toMinute = Math.floor(toDate.getTime() / 60_000);
 
@@ -437,47 +449,42 @@ const solarEdgeDebug = (req: Request, res: Response) => {
  * ```
  */
 const solarEdgeBackup = async () => {
-  //get mm-dd-yyyy
   const d = new Date();
   const date = `${d.getMonth() + 1}-${d.getDate()}-${d.getFullYear()}`;
 
-  let __filename = path.join(logsDir, `solarEdge-Backup-${date}.json`);
-  //delete the file if it exists
+  const __filename = path.join(logsDir, `solarEdge-Backup-${date}.json`);
   if (fs.existsSync(__filename)) fs.unlinkSync(__filename);
   fs.appendFileSync(__filename, "[\n");
 
-  const last = Math.floor(d.getTime() / 3600000);
+  const last = Math.floor(d.getTime() / 60_000); // epoch minute
 
-  //get pocketbase record with lowest id
-  const belowMatches = await pb.collection("solarEdge").getList(1, 1, {
-    sort: "+id", // ascending
+  const belowMatches = await pb.collection("solar").getList(1, 1, {
+    sort: "+id", // ascending — find the oldest record
   });
   if (belowMatches.totalItems == 0) return { start: 0, last, file: __filename, count: 0, removed: "" };
 
   let start = parseInt(belowMatches.items[0].id);
-  let end = start + 200;
+  let end = start + 1440; // 1 day of minutes per batch
   let records: any[] = [];
   let count = 0;
   while (start < last) {
-    // load records >= start and < end
-    records = await pb.collection("solarEdge").getFullList({
+    records = await pb.collection("solar").getFullList({
       filter: `id >= "${ToId(start)}" && id < "${ToId(end)}"`,
-      sort: "id", // Ensure the records are sorted in ascending order by id
-    }); //write records to file
+      sort: "id",
+    });
     let all = "";
     records.forEach((r: any) => {
-      all += JSON.stringify({ hour: parseInt(r.id), power: r.power }) + ",\n";
+      all += JSON.stringify({ minute: parseInt(r.id), ticks: r.ticks, average: r.average }) + ",\n";
       count++;
     });
     if (end >= last) all = all.substring(0, all.length - 2) + "]\n";
     fs.appendFileSync(__filename, all);
     start = end;
-    end = start + 200;
+    end = start + 1440;
   }
-  //remove the last comma in the file
   fs.appendFileSync(__filename, "]\n");
 
-  // get date for 5 days ago
+  // Remove backup from 5 days ago
   d.setDate(d.getDate() - 5);
   const date5 = `${d.getMonth() + 1}-${d.getDate()}-${d.getFullYear()}`;
   if (fs.existsSync(path.join(logsDir, `solarEdge-Backup-${date5}.json`)))
@@ -590,87 +597,6 @@ export const solarEdgeRoutes = (): express.Router => {
    */
   router.get("/solarEdge/Backup", (req, res) => {
     res.json(solarEdgeBackup());
-  });
-
-  router.get("/solarEdge/Translate", async (req, res) => {
-    let start = 476788;
-    let stop = 490816;
-    let span = 100;
-    let saveCnt = 0;
-    let batchCount = 0;
-
-    //get the largest id in solar collection that is less than stop*60
-    try {
-      const belowMatches = await pb.collection("solar").getList(1, 1, {
-        filter: `id < "${ToId(stop * 60)}"`,
-        sort: "-id", // descending
-      });
-      if (belowMatches.totalItems > 0) {
-        start = Math.floor(parseInt(belowMatches.items[0].id) / 60) + 1;
-        log(__logFile, "solarEdgeTranslate", "starting at", start);
-      }
-    } catch (error: any) {
-      log(__logFile, "solarEdgeTranslate", "error finding starting point", error.message);
-    }
-
-    try {
-      while (start < stop) {
-        let filter = `id >= "${ToId(start)}" && id < "${ToId(start + span)}"`;
-
-        let record;
-        try {
-          record = await pb.collection("solarEdge").getFullList({
-            filter,
-            sort: "id", // Ensure the records are sorted in ascending order by id
-          });
-          log(__logFile, "solarEdgeTranslate", "retrieved records:" + record.length);
-        } catch (error: any) {
-          log(__logFile, "solarEdgeTranslate", "failed to retrieve records ", error.message, " continuing...");
-          start += span;
-          if (stop - start < span) span = stop - start;
-          continue;
-        }
-
-        if (record.length == 0) {
-          log(__logFile, "solarEdgeTranslate", "no records found ", filter);
-        } else {
-          for (let j = 0; j < record.length; j++) {
-            let id = parseInt(record[j].id) * 60;
-            // split r.power into 60x4 array
-            for (let i = 0; i < 240; i += 4) {
-              let ticks = record[j].power.slice(i, i + 4);
-              let average = Math.round((ticks[0] + ticks[1] + ticks[2] + ticks[3]) / 4);
-              try {
-                await pb.collection("solar").create({ id: ToId(id), ticks, average });
-                saveCnt++;
-              } catch (error: any) {
-                log(
-                  __logFile,
-                  "solarEdgeTranslate",
-                  "saving id:" + ToId(id) + " ERROR couldn't create: ",
-                  error.message,
-                );
-              }
-              id++;
-              // Add small delay between each create to prevent overwhelming DB
-              await new Promise((resolve) => setTimeout(resolve, 10));
-            }
-          }
-          log(__logFile, "solarEdgeTranslate", "batch " + ++batchCount + " saved ", saveCnt, " total records");
-        }
-
-        start += span;
-        if (stop - start < span) span = stop - start;
-
-        // Add longer delay between batches to prevent connection reset
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-
-      res.json({ saved: saveCnt, batches: batchCount, success: true });
-    } catch (error: any) {
-      log(__logFile, "solarEdgeTranslate", "fatal error:", error.message);
-      res.status(500).json({ error: error.message, saved: saveCnt, batches: batchCount });
-    }
   });
 
   console.log("solarEdge running");
