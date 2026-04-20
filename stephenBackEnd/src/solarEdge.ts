@@ -177,6 +177,7 @@ const isDaytime = () => {
     log(__logFile, "isDaytime", "now daytime");
     wasDaytime = true;
     const now = Date.now();
+    activeHour = Math.floor(now / 3_600_000);
     readingMinute = Math.floor((now + 7500) / 60000);
     currentReadingMinute = readingMinute;
     readings = [0, 0, 0, 0];
@@ -278,6 +279,7 @@ function startFiveSecondTimer(callback: FiveSecondTimerCallback): void {
     // Calculate delay to the next 5s mark
     const delay = interval - (now % interval);
     readingMinute = Math.floor((now + 7_500) / 60_000);
+    activeHour = Math.floor(now / 3_600_000);
 
     setTimeout(() => {
       const date = new Date();
