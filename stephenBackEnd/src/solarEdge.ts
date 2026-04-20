@@ -63,7 +63,7 @@ let UnitInfo: any = null;
 /** Modbus TCP client instance for inverter communication */
 const client = new ModbusRTU();
 client.setID(1);
-client.setTimeout(20000);
+client.setTimeout(4_500);
 
 /** Log file path for SolarEdge operations */
 const __logFile = path.join(logsDir, `solarEdge.log`);
@@ -141,7 +141,7 @@ const connect = async () => {
           }
         },
       );
-      //   client.setTimeout(4_500);
+
     });
   }
 };
@@ -371,85 +371,37 @@ const solarEdgeRange = async (req: Request, res: Response) => {
   if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
     return res.status(400).json({ error: "Invalid date format" });
   }
-  const fromHour = Math.floor(fromDate.getTime() / 3600000);
-  const toHour = Math.floor(toDate.getTime() / 3600000);
 
-  let ans: any[] = [];
+  const fromHour = Math.floor(fromDate.getTime() / 3_600_000);
+  const toHour = Math.floor(toDate.getTime() / 3_600_000);
+  const fromMinute = fromHour * 60;
+  const toMinute = Math.floor(toDate.getTime() / 60_000);
+
   try {
-    const belowMatches = await pb.collection("solarEdge").getList(1, 1, {
-      filter: `id <= "${ToId(fromHour)}"`,
-      sort: "-id", // descending
+    const records = await pb.collection("solar").getFullList({
+      filter: `id >= "${ToId(fromMinute)}" && id <= "${ToId(toMinute)}"`,
+      sort: "id",
     });
-    log(
-      __logFile,
-      "solarEdgeRange",
-      parseInt(belowMatches.items[0].id),
-      "is the latest hr in the dB <=",
-      fromHour,
-      "starting there",
-    );
 
-    const record = await pb.collection("solarEdge").getFullList({
-      filter: `id >= "${belowMatches.items[0].id}" && id <= "${ToId(toHour == activeHour ? toHour - 1 : toHour)}"`,
-      sort: "id", // Ensure the records are sorted in ascending order by id
-    });
-    let idx = 0;
-    let l = record[0].power[239];
-    let h = parseInt(belowMatches.items[0].id);
-    let s = 0,
-      t = 0;
-    let found = false;
+    const ans: number[] = [];
+    let lastVal = 0;
+    let recIdx = 0;
 
-    while (idx < record.length) {
-      if (idx == 0) s = parseInt(record[idx].id);
-
-      if (record[idx].id == ToId(h)) {
-        if (idx > 0 && !found) {
-          log(__logFile, "solarEdgeRange", "filling in missing hrs", s, " to", h - 1);
-          s = h;
-        }
-        found = true;
-        ans = ans.concat(record[idx].power);
-        if (ans.length > 0) l = ans[ans.length - 1];
-        idx++;
+    for (let m = fromMinute; m <= toMinute; m++) {
+      if (recIdx < records.length && parseInt(records[recIdx].id) === m) {
+        ans.push(...records[recIdx].ticks);
+        lastVal = records[recIdx].ticks[3];
+        recIdx++;
       } else {
-        if (idx > 0 && found) {
-          log(__logFile, "solarEdgeRange", "filling in found   hrs", s, " to", h - 1);
-          s = h;
-        }
-        found = false;
-        ans = ans.concat(Array(240).fill(l));
+        ans.push(lastVal, lastVal, lastVal, lastVal);
       }
-      h++;
     }
 
-    const last = toHour == activeHour ? toHour - 1 : toHour;
-    while (h <= last) {
-      if (found) {
-        log(__logFile, "solarEdgeRange", "filling in found   hrs", s, " to", h);
-        found = false;
-        s = h;
-      }
-      ans = ans.concat(Array(240).fill(l));
-      h++;
-    }
+    log(__logFile, "solarEdgeRange", "found", records.length, "records,", ans.length / 240, "hours");
 
-    if (!found) log(__logFile, "solarEdgeRange", "filling in missing hrs", s, " to", h);
-    else log(__logFile, "solarEdgeRange", "filling in found   hrs", s, " to", h);
-
-    if (activeHour == toHour) ans = ans.concat(hour.slice(0, lastTick));
-
-    log(__logFile, "solarEdgeRange", "found", record.length, " records");
-
-    return res.json({
-      data: ans,
-      from,
-      to,
-      fromHour: parseInt(belowMatches.items[0].id),
-      toHour,
-    });
+    return res.json({ data: ans, from, to, fromHour, toHour });
   } catch (error) {
-    return res.status(400).json({ error: "error retrieving hours", activeHour, errorMsg: error });
+    return res.status(400).json({ error: "error retrieving range", activeHour, errorMsg: error });
   }
 };
 
