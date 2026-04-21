@@ -233,7 +233,8 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
       openRetryCount++;
     }
 
-    if (client.isOpen && isDaytime()) {
+    const daytime = isDaytime();
+    if (client.isOpen && daytime) {
       let success = false;
       let readRetryCount = 0;
 
@@ -245,16 +246,18 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
         } catch (error) {}
         readRetryCount++;
       }
+      if (!success) {
+        log(__logFile, "handleTick", "1 read attempt failed, logging last power");
+      } else {
+        log(__logFile, "handleTick", `read ${Math.round(lastReading)} W`);
+      }
+    }
+    if (daytime) {
       reading += lastReading;
       if (fiveSecondTimerIndex % 3 === 2) {
         readings[Math.floor(fiveSecondTimerIndex / 3)] = Math.round(reading / 3);
         log(__logFile, "handleTick", `average of 3: ${Math.round(reading / 3)} W`);
         reading = 0;
-      }
-      if (!success) {
-        log(__logFile, "handleTick", "1 read attempt failed, logging last power");
-      } else {
-        log(__logFile, "handleTick", `read ${Math.round(lastReading)} W`);
       }
       if (fiveSecondTimerIndex == 11) saveCurrentMinute();
     }
