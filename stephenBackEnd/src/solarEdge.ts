@@ -280,7 +280,8 @@ function startFiveSecondTimer(callback: FiveSecondTimerCallback): void {
   const scheduleNext = (): void => {
     const now = Date.now();
     // Calculate delay to the next 5s mark
-    const delay = interval - (now % interval);
+    let delay = interval - (now % interval);
+    if (delay < 1000) delay += interval; // guard: prevent double-fire when called just after a 5s boundary
     readingMinute = Math.floor((now + 7_500) / 60_000);
     activeHour = Math.floor(now / 3_600_000);
 
