@@ -69,7 +69,6 @@ client.setTimeout(4_500);
 const __logFile = path.join(logsDir, `solarEdge.log`);
 
 const saveCurrentMinute = async () => {
-  log(__logFile, "saveCurrentMinute", `saving minute: ${currentReadingMinute}`);
   const avgPower = Math.floor((readings[0] + readings[1] + readings[2] + readings[3]) / 4);
   if (avgPower != 0) {
     await pb
@@ -187,6 +186,8 @@ const isDaytime = () => {
 
 /** Flag to prevent overlapping tick execution */
 let busy = false;
+/** True once a tick-0 (minute boundary) has been seen; gates inline log writes. */
+let seenMinuteBoundary = false;
 let readings = [0, 0, 0, 0];
 let readingMinute = 0;
 let currentReadingMinute = 0;
@@ -238,6 +239,7 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
     // At the minute boundary (tick 0) write the timestamp prefix — the whole minute's
     // dots and averages accumulate on this one line, terminated by a newline at tick 11.
     if (daytime && fiveSecondTimerIndex === 0) {
+      seenMinuteBoundary = true;
       const now = new Date();
       const pad2 = (n: number) => String(n).padStart(2, "0");
       const ts = `${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}-${now.getFullYear()} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:00`;
@@ -261,20 +263,22 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
       }
     }
     if (daytime) {
-      // Separate groups with a space before the first dot of groups 1–3
-      if (fiveSecondTimerIndex % 3 === 0 && fiveSecondTimerIndex > 0) {
-        fs.appendFileSync(__logFile, " ");
+      if (seenMinuteBoundary) {
+        // Separate groups with a space before the first dot of groups 1–3
+        if (fiveSecondTimerIndex % 3 === 0 && fiveSecondTimerIndex > 0) {
+          fs.appendFileSync(__logFile, " ");
+        }
+        fs.appendFileSync(__logFile, ".");
       }
-      fs.appendFileSync(__logFile, ".");
       reading += lastReading;
       if (fiveSecondTimerIndex % 3 === 2) {
         const avg = Math.round(reading / 3);
         readings[Math.floor(fiveSecondTimerIndex / 3)] = avg;
-        fs.appendFileSync(__logFile, ` ${avg}W`);
+        if (seenMinuteBoundary) fs.appendFileSync(__logFile, ` ${avg}W`);
         reading = 0;
       }
       if (fiveSecondTimerIndex === 11) {
-        fs.appendFileSync(__logFile, "\n");
+        if (seenMinuteBoundary) fs.appendFileSync(__logFile, "\n");
         saveCurrentMinute();
       }
     }
