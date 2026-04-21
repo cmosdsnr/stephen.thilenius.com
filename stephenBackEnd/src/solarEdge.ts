@@ -234,6 +234,16 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
     }
 
     const daytime = isDaytime();
+
+    // On the first tick of each 3-tick group, write the log prefix (no newline) so the
+    // dots and final average all appear on the same line.
+    if (daytime && fiveSecondTimerIndex % 3 === 0) {
+      const now = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, "0");
+      const ts = `${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}-${now.getFullYear()} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+      fs.appendFileSync(__logFile, `${ts.padEnd(20)}handleTick:       `);
+    }
+
     if (client.isOpen && daytime) {
       let success = false;
       let readRetryCount = 0;
@@ -248,15 +258,15 @@ const handleTick = async (fiveSecondTimerIndex: number) => {
       }
       if (!success) {
         log(__logFile, "handleTick", "1 read attempt failed, logging last power");
-      } else {
-        log(__logFile, "handleTick", `read ${Math.round(lastReading)} W`);
       }
     }
     if (daytime) {
+      fs.appendFileSync(__logFile, ".");
       reading += lastReading;
       if (fiveSecondTimerIndex % 3 === 2) {
-        readings[Math.floor(fiveSecondTimerIndex / 3)] = Math.round(reading / 3);
-        log(__logFile, "handleTick", `average of 3: ${Math.round(reading / 3)} W`);
+        const avg = Math.round(reading / 3);
+        readings[Math.floor(fiveSecondTimerIndex / 3)] = avg;
+        fs.appendFileSync(__logFile, ` ${avg}W\n`);
         reading = 0;
       }
       if (fiveSecondTimerIndex == 11) saveCurrentMinute();
