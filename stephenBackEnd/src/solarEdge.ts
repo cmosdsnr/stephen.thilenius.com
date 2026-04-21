@@ -309,75 +309,21 @@ function startFiveSecondTimer(callback: FiveSecondTimerCallback): void {
 }
 
 /**
- * HTTP GET handler: return the last N hours of solar power readings.
- * Retrieves historical power data from database and current hour buffer.
+ * Reduce a raw 15-second sample array to at most `targetPoints` entries using sliding window averaging.
  *
- * @param req - Express request with query.hours parameter
- * @param res - Express response with JSON power data array
- * @returns JSON array of 15-second power readings for specified hours
+ * Window size is `floor(data.length / targetPoints)`. Each output point is the integer mean of its
+ * window, so the output length is `ceil(data.length / windowSize)` — slightly more than `targetPoints`.
+ * If the data is already at or below `targetPoints`, it is returned unchanged with `stepMs = 15000`.
  *
- * @example
- * ```typescript
- * // GET /solarEdge/Hours?hours=24
- * // Returns 24 hours of data (24 × 240 = 5,760 readings)
- * ```
- */
-const solarEdgeHours = async (req: Request, res: Response) => {
-  if (activeHour === -1) return res.status(400).json({ error: "no active hour", ...req.params, activeHour });
-  if (req.query.hours === undefined)
-    return res.status(400).json({ error: "hours not found", ...req.query, help: "add ?hours=n to the url" });
-  const hours = parseInt(req.query.hours as string);
-  if (hours <= 0) return res.status(400).json({ error: "hours must be greater than 0", ...req.params });
-
-  const fromMinute = (activeHour - hours) * 60;
-  const toMinute = activeHour * 60 + 59;
-
-  try {
-    const records = await pb.collection("solar").getFullList({
-      filter: `id >= "${ToId(fromMinute)}" && id <= "${ToId(toMinute)}"`,
-      sort: "id",
-    });
-
-    const ans: number[] = [];
-    let lastVal = 0;
-    let recIdx = 0;
-
-    for (let m = fromMinute; m <= toMinute; m++) {
-      if (recIdx < records.length && parseInt(records[recIdx].id) === m) {
-        ans.push(...records[recIdx].ticks);
-        lastVal = records[recIdx].ticks[3];
-        recIdx++;
-      } else {
-        ans.push(lastVal, lastVal, lastVal, lastVal);
-      }
-    }
-
-    log(__logFile, "solarEdgeHours", "found", records.length, "records");
-    return res.json(ans);
-  } catch (error) {
-    return res.status(400).json({ error: "solarEdge error retrieving hours", activeHour, errorMsg: error });
-  }
-};
-
-/**
- * HTTP GET handler: return solar power data for a specific date range.
- * Fills gaps in data with last known values and handles missing hours.
- *
- * @param req - Express request with query.from and query.to date parameters
- * @param res - Express response with JSON data and metadata
- * @returns JSON object with power data array and range information
+ * @param data         - Raw array of watt readings, one entry per 15-second tick
+ * @param targetPoints - Desired maximum number of output points (e.g. chart pixel width)
+ * @returns Object with the decimated `data` array and `stepMs` — milliseconds represented by each point
  *
  * @example
  * ```typescript
- * // GET /solarEdge/Range?from=2023-12-01T00:00:00&to=2023-12-01T23:59:59
- * // Returns full day of power data with gap filling
+ * const { data, stepMs } = decimate(rawSamples, 900);
+ * // For 5760 raw points → windowSize=6, ~960 output points, stepMs=90000 (90 s each)
  * ```
- */
-
-/**
- * Decimate a data array to at most `targetPoints` entries using sliding window averaging.
- * Each output point is the mean of its window. Output length = ceil(data.length / windowSize).
- * Returns the decimated array and the time step in ms each output point represents.
  */
 const decimate = (data: number[], targetPoints: number): { data: number[]; stepMs: number } => {
   if (data.length <= targetPoints) return { data, stepMs: 15000 };
@@ -390,19 +336,43 @@ const decimate = (data: number[], targetPoints: number): { data: number[]; stepM
   return { data: result, stepMs: windowSize * 15000 };
 };
 
+/**
+ * HTTP GET handler: return solar power data from a start date to the current end of the database.
+ *
+ * Queries the `solar` PocketBase collection, gap-fills missing minutes with the last known value,
+ * then optionally decimates the result to `points` entries using sliding window averaging.
+ * Each response point represents `stepMs` milliseconds of averaged power.
+ *
+ * @param req - Express request with the following query parameters:
+ *   - `from` (required) — ISO 8601 start date/time
+ *   - `to`   (optional) — ISO 8601 end date/time; defaults to current time
+ *   - `points` (optional) — target number of output points (e.g. chart pixel width); omit for raw data
+ * @param res - Express response
+ * @returns JSON `{ data, stepMs, from, to, fromHour, toHour }`
+ *   - `data`     — array of watt readings, decimated to ≤ `points` entries
+ *   - `stepMs`   — milliseconds each data point represents (15000 if no decimation)
+ *   - `fromHour` — epoch hour of the start of the range
+ *   - `toHour`   — epoch hour of the end of the range
+ *
+ * @example
+ * ```typescript
+ * // GET /solarEdge/Range?from=2024-04-18T07:00:00Z&points=900
+ * // Returns ~900 points covering from April 18 07:00 UTC to now
+ * ```
+ */
 const solarEdgeRange = async (req: Request, res: Response) => {
-  const { from, to } = req.query;
+  const { from } = req.query;
 
-  if (!from || !to) {
-    return res.status(400).json({ error: "solarEdge Missing from or to query parameters" });
+  if (!from) {
+    return res.status(400).json({ error: "solarEdge Missing from query parameter" });
   }
 
   const fromDate = new Date(from as string);
-  const toDate = new Date(to as string);
-
-  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+  if (isNaN(fromDate.getTime())) {
     return res.status(400).json({ error: "Invalid date format" });
   }
+
+  const toDate = req.query.to ? new Date(req.query.to as string) : new Date();
   const fromHour = Math.floor(fromDate.getTime() / 3600000);
   const toHour = Math.floor(toDate.getTime() / 3600000);
 
@@ -569,8 +539,7 @@ try {
  * Creates an Express router for handling SolarEdge inverter data operations and reporting.
  *
  * Provides the following routes:
- * - GET /solarEdge/Hours?hours=N - Returns power data for the last N hours
- * - GET /solarEdge/Range?from=DATE&to=DATE - Returns power data for specific date range
+ * - GET /solarEdge/Range?from=DATE&[to=DATE]&[points=N] - Returns power data for date range
  * - GET /solarEdge/Debug - Returns debug information about current monitoring state
  * - GET /solarEdge/UnitInfo - Returns SunSpec device information from inverter
  * - GET /solarEdge/Backup - Creates and returns backup statistics
@@ -582,20 +551,12 @@ try {
  * app.use('/api', solarEdgeRoutes());
  *
  * // Available endpoints:
- * // GET /api/solarEdge/Hours?hours=24
- * // GET /api/solarEdge/Range?from=2023-12-01T00:00:00&to=2023-12-01T23:59:59
+ * // GET /api/solarEdge/Range?from=2023-12-01T00:00:00&points=900
  * // GET /api/solarEdge/Debug
  * ```
  */
 export const solarEdgeRoutes = (): express.Router => {
   const router = express.Router();
-
-  /**
-   * GET /solarEdge/Hours
-   * Returns historical power readings for the specified number of hours.
-   * Combines database records with current hour buffer data.
-   */
-  router.get("/solarEdge/Hours", async (req, res) => solarEdgeHours(req, res));
 
   /**
    * GET /solarEdge/Range
