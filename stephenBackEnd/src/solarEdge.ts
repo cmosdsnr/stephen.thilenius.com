@@ -374,6 +374,22 @@ const solarEdgeHours = async (req: Request, res: Response) => {
  * ```
  */
 
+/**
+ * Decimate a data array to at most `targetPoints` entries using sliding window averaging.
+ * Each output point is the mean of its window. Output length = ceil(data.length / windowSize).
+ * Returns the decimated array and the time step in ms each output point represents.
+ */
+const decimate = (data: number[], targetPoints: number): { data: number[]; stepMs: number } => {
+  if (data.length <= targetPoints) return { data, stepMs: 15000 };
+  const windowSize = Math.floor(data.length / targetPoints);
+  const result: number[] = [];
+  for (let i = 0; i < data.length; i += windowSize) {
+    const win = data.slice(i, i + windowSize);
+    result.push(Math.round(win.reduce((a, b) => a + b, 0) / win.length));
+  }
+  return { data: result, stepMs: windowSize * 15000 };
+};
+
 const solarEdgeRange = async (req: Request, res: Response) => {
   const { from, to } = req.query;
 
@@ -415,7 +431,12 @@ const solarEdgeRange = async (req: Request, res: Response) => {
 
     log(__logFile, "solarEdgeRange", "found", records.length, "records,", ans.length / 240, "hours");
 
-    return res.json({ data: ans, from, to, fromHour, toHour });
+    const targetPoints = parseInt(req.query.points as string);
+    const { data: decimated, stepMs } = isNaN(targetPoints) || targetPoints <= 0
+      ? { data: ans, stepMs: 15000 }
+      : decimate(ans, targetPoints);
+
+    return res.json({ data: decimated, stepMs, from, to, fromHour, toHour });
   } catch (error) {
     return res.status(400).json({ error: "error retrieving range", activeHour, errorMsg: error });
   }
