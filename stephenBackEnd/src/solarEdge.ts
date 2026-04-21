@@ -421,7 +421,19 @@ const solarEdgeRange = async (req: Request, res: Response) => {
       }
     }
 
-    log(__logFile, "solarEdgeRange", "found", records.length, "records,", ans.length / 240, "hours");
+    // If we're mid-minute the log file ends without \n (partial dots line in progress).
+    // Lift that partial line out, write this log entry, then restore the partial line.
+    {
+      let partial = "";
+      const existing = fs.existsSync(__logFile) ? fs.readFileSync(__logFile, "utf8") : "";
+      if (existing.length > 0 && !existing.endsWith("\n")) {
+        const lastNl = existing.lastIndexOf("\n");
+        partial = existing.slice(lastNl + 1);
+        fs.writeFileSync(__logFile, existing.slice(0, lastNl + 1));
+      }
+      log(__logFile, "solarEdgeRange", "found", records.length, "records,", ans.length / 240, "hours");
+      if (partial) fs.appendFileSync(__logFile, partial);
+    }
 
     const targetPoints = parseInt(req.query.points as string);
     const { data: decimated, stepMs } = isNaN(targetPoints) || targetPoints <= 0
