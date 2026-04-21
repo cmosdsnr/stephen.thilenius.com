@@ -406,7 +406,7 @@ const solarEdgeRange = async (req: Request, res: Response) => {
       ? { data: ans, stepMs: 15000 }
       : decimate(ans, targetPoints);
 
-    return res.json({ data: decimated, stepMs, from, to, fromHour, toHour });
+    return res.json({ data: decimated, stepMs, from, to: toDate.toISOString(), fromHour, toHour });
   } catch (error) {
     return res.status(400).json({ error: "error retrieving range", activeHour, errorMsg: error });
   }
