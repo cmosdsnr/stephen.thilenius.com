@@ -239,7 +239,9 @@ export const espRoutes = (): express.Router => {
   router.get("/ESPlist", (req, res) => res.json(ESPlist));
 
   router.get("/register", (req, res) => {
-    const ip = req.ip?.replace("::ffff:", "") ?? "";
+    const ip = (req.query.ip as string | undefined)
+            || req.ip?.replace("::ffff:", "")
+            || "";
     const diag = (req.query.diag as string | undefined)?.replace(/\+/g, " ") ?? "";
     if (!ip) {
       res.json({ success: false, error: "could not determine caller IP" });
@@ -259,6 +261,15 @@ export const espRoutes = (): express.Router => {
         console.log(`ESP register failed for ${ip}${diag ? ` [${diag}]` : ""}: ${err.message}`);
         res.json({ success: false, error: err.message });
       });
+  });
+
+  router.get("/heartbeat", (req, res) => {
+    const ip     = (req.query.ip as string) || req.ip?.replace("::ffff:", "") || "?";
+    const uptime = (req.query.uptime as string) ?? "";
+    const heap   = (req.query.heap   as string) ?? "";
+    const diag   = ((req.query.diag  as string) ?? "").replace(/\+/g, " ");
+    console.log(`💓 heartbeat ${ip}  uptime=${uptime}s heap=${heap}  [${diag}]`);
+    res.json({ ok: true });
   });
 
   router.get("/setPrefix", (req, res) => {
