@@ -10,7 +10,6 @@ import { blossomRoutes } from "blossom";
 import { espRoutes } from "esp";
 // import { davisAnemometer } from "davisAnemometer";
 import { fileShareRoutes } from "fileShare";
-import { localPortalRoutes } from "localPortal";
 
 /**
  * Creates and configures the main API router by mounting various sub-routers
@@ -28,12 +27,9 @@ export function createApiRouter(): Router {
   router.use(ultimeterRoutes());
   router.use(albumsAndBoxesRoutes());
   router.use(blossomRoutes());
-  router.use(espRoutes());
+  router.use("/esp", espRoutes());
   // router.use(davisAnemometer());
   router.use(fileShareRoutes());
-
-  // Admin-only proxy portal — forwards /portal/* to http://192.168.1.96
-  router.use(localPortalRoutes());
 
   /**
    * Basic test endpoint to confirm that the API server is up and running.
