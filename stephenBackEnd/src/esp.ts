@@ -240,6 +240,7 @@ export const espRoutes = (): express.Router => {
 
   router.get("/register", (req, res) => {
     const ip = req.ip?.replace("::ffff:", "") ?? "";
+    const diag = (req.query.diag as string | undefined)?.replace(/\+/g, " ") ?? "";
     if (!ip) {
       res.json({ success: false, error: "could not determine caller IP" });
       return;
@@ -251,11 +252,11 @@ export const espRoutes = (): express.Router => {
         registerDevice(name, ip);
         if (name.toLowerCase().includes("sprinkler")) setSprinklerIP(ip);
         if (name.toLowerCase().includes("powermeter")) setMeterIP(ip);
-        console.log(`ESP registered: ${name} at ${ip}`);
-        res.json({ success: true, name });
+        console.log(`ESP registered: ${name} at ${ip}${diag ? `  [${diag}]` : ""}`);
+        res.json({ success: true, name, diag });
       })
       .catch((err) => {
-        console.log(`ESP register failed for ${ip}: ${err.message}`);
+        console.log(`ESP register failed for ${ip}${diag ? ` [${diag}]` : ""}: ${err.message}`);
         res.json({ success: false, error: err.message });
       });
   });
