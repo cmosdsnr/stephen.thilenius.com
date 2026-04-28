@@ -9,7 +9,7 @@ import { useQuery } from 'react-query';
 import toast from 'react-hot-toast';
 import { Card, Table, Row, Col, Spinner, Alert, Button, Form } from 'react-bootstrap';
 import Slider from 'rc-slider';
-import { AdminMenu } from './AdminMenu';
+import AdminPageLayout from './AdminPageLayout';
 import 'rc-slider/assets/index.css';
 import './admin.css';
 import { API } from '../../api';
@@ -247,65 +247,94 @@ export default function PowerMeter() {
     };
 
     return (
-        <>
-            <AdminMenu span={4} offset={8} />
-            <h3>Power Meter</h3>
+        <AdminPageLayout title="Power Meter">
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
-            {/* Metric selector */}
-            <Row className="mb-3">
-                <Col>
-                    <Form.Check inline type="radio" label="Current" checked={metric === 'current'} onChange={() => setMetric('current')} />
-                    <Form.Check inline type="radio" label="Energy" checked={metric === 'energy'} onChange={() => setMetric('energy')} />
-                </Col>
-            </Row>
+                {/* Chart card */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            {metric === 'current' ? 'Current (A)' : 'Energy (kWh)'}
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            {(['current', 'energy'] as const).map(m => (
+                                <button
+                                    key={m}
+                                    onClick={() => setMetric(m)}
+                                    style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', background: metric === m ? '#f59e0b' : 'transparent', color: metric === m ? '#001830' : '#6a9ac4', border: '1px solid', borderColor: metric === m ? '#f59e0b' : '#1c3050', borderRadius: 4, padding: '0.2rem 0.75rem', cursor: 'pointer' }}
+                                >
+                                    {m}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div style={{ padding: '1.25rem', backgroundColor: chartBg }}>
+                        {hoursLoading && (
+                            <Spinner animation="border" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </Spinner>
+                        )}
+                        {hoursError && (
+                            <Alert variant="danger">Error: {(hoursError as Error).message}</Alert>
+                        )}
+                        {!hoursLoading && !hoursError && <Line data={chartData} options={options} />}
+                    </div>
+                </div>
 
-            {/* Chart */}
-            <Row style={{ backgroundColor: chartBg }} className="p-5 mb-5">
-                <Col>
-                    {hoursLoading && (
-                        <Spinner animation="border" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                    )}
-                    {hoursError && (
-                        <Alert variant="danger">Error: {(hoursError as Error).message}</Alert>
-                    )}
-                    {!hoursLoading && !hoursError && <Line data={chartData} options={options} />}
-                </Col>
-            </Row>
+                {/* Controls card */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Controls
+                        </span>
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                        <Row style={{ marginBottom: '1.5rem', alignItems: 'center' }}>
+                            <Col xs={12} md={6}>
+                                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: '#001830', marginBottom: '0.5rem' }}>
+                                    Days: {numDays}
+                                </div>
+                                <div style={{ padding: '0 0.5rem 1.5rem' }}>
+                                    <Slider min={1} max={10} marks={marks} value={numDays} onChange={v => setNumDays(v as number)} />
+                                </div>
+                            </Col>
+                            <Col xs={12} md={6}>
+                                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: '#001830', marginBottom: '0.5rem' }}>
+                                    Active Channels:
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {selectedChannels.map((v, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => toggleChannel(i)}
+                                            style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.1em', background: v ? '#f59e0b' : 'transparent', color: v ? '#001830' : '#6a9ac4', border: '1px solid', borderColor: v ? '#f59e0b' : '#e2e8f0', borderRadius: 4, padding: '0.25rem 0.6rem', cursor: 'pointer' }}
+                                        >
+                                            ch{i}
+                                        </button>
+                                    ))}
+                                </div>
+                            </Col>
+                        </Row>
+                        <button
+                            onClick={() => {
+                                const sel = ADC1_PINS.findIndex(p => p.value === '36');
+                                fetch(API.powerMeterRunScan(sel.toString()))
+                                    .then(res => res.ok && res.json())
+                                    .then(() => setTimeout(() => window.location.reload(), 2000))
+                                    .catch(err => { console.error(err); toast.error('Failed to run frequency scan'); });
+                            }}
+                            style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'transparent', color: '#f59e0b', border: '1.5px solid #f59e0b', borderRadius: 4, padding: '0.35rem 1.25rem', cursor: 'pointer' }}
+                        >
+                            Run Frequency Scan
+                        </button>
+                    </div>
+                </div>
 
-            {/* Controls */}
-            <Row style={{ marginBottom: 20 }}>
-                <Col xs={12} md={6}>
-                    Number of Days: {numDays}
-                    <Slider min={1} max={10} marks={marks} value={numDays} onChange={v => setNumDays(v as number)} />
-                </Col>
-                <Col xs={12} md={6}>
-                    Active Channels:
-                    {selectedChannels.map((v, i) => (
-                        <Form.Check key={i} inline type="checkbox" label={`ch${i}`} checked={v} onChange={() => toggleChannel(i)} />
-                    ))}
-                </Col>
-            </Row>
+                <DetailsDashboard />
+                <StaggeredChannelPlots />
 
-            {/* Scan button and other components */}
-            <Row style={{ marginBottom: 20 }}>
-                <Col xs={12} md={4}>
-                    <Button onClick={() => {
-                        const sel = ADC1_PINS.findIndex(p => p.value === '36');
-                        fetch(API.powerMeterRunScan(sel.toString()))
-                            .then(res => res.ok && res.json())
-                            .then(() => setTimeout(() => window.location.reload(), 2000))
-                            .catch(err => { console.error(err); toast.error('Failed to run frequency scan'); });
-                    }}>
-                        Scan
-                    </Button>
-                </Col>
-            </Row>
-
-            <DetailsDashboard />
-            <StaggeredChannelPlots />
-        </>
+            </div>
+        </AdminPageLayout>
     );
 }
 

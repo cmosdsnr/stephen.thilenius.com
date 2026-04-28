@@ -179,7 +179,7 @@ bool updatePocketBase(char *localShortTime, int32_t activeHour, double hour[6][6
 
     for (uint8_t i = 0; i < 6; i++)
     {
-        Serial0.println(i);
+        printf("%d\n", i);
         d += "[[0,";
         d += hour[i][0];
         d += "]";
@@ -244,16 +244,14 @@ bool doesNameExist()
 
         if (httpResponseCode > 0)
         {
-            printf("HTTP Response code: ");
-            Serial0.println(httpResponseCode);
+            printf("HTTP Response code: %d\n", httpResponseCode);
             String payload = http.getString();
             http.end();
             doc.clear();
             DeserializationError error = deserializeJson(doc, payload.c_str());
             if (error)
             {
-                Serial0.print(F("doesNameExist: deserializeJson() failed: "));
-                Serial0.println(error.f_str());
+                printf("doesNameExist: deserializeJson() failed: %s\n", error.f_str());
                 return false;
             }
             else
@@ -267,8 +265,7 @@ bool doesNameExist()
         }
         else
         {
-            printf("Error code: ");
-            Serial0.println(httpResponseCode);
+            printf("Error code: %d\n", httpResponseCode);
             http.end();
             return false;
         }
@@ -300,16 +297,14 @@ bool createNameRecord()
 
         if (httpResponseCode > 0)
         {
-            printf("HTTP Response code: ");
-            Serial0.println(httpResponseCode);
+            printf("HTTP Response code: %d\n", httpResponseCode);
             String payload = http.getString();
             http.end();
             doc.clear();
             DeserializationError error = deserializeJson(doc, payload.c_str());
             if (error)
             {
-                Serial0.print(F("doesNameExist: deserializeJson() failed: "));
-                Serial0.println(error.f_str());
+                printf("doesNameExist: deserializeJson() failed: %s\n", error.f_str());
                 return false;
             }
             else
@@ -323,8 +318,7 @@ bool createNameRecord()
         }
         else
         {
-            printf("Error code: ");
-            Serial0.println(httpResponseCode);
+            printf("Error code: %d\n", httpResponseCode);
             http.end();
             return false;
         }
@@ -356,16 +350,14 @@ bool updateNameRecord()
 
         if (httpResponseCode > 0)
         {
-            printf("HTTP Response code: ");
-            Serial0.println(httpResponseCode);
+            printf("HTTP Response code: %d\n", httpResponseCode);
             String payload = http.getString();
             http.end();
             doc.clear();
             DeserializationError error = deserializeJson(doc, payload.c_str());
             if (error)
             {
-                Serial0.print(F("doesNameExist: deserializeJson() failed: "));
-                Serial0.println(error.f_str());
+                printf("doesNameExist: deserializeJson() failed: %s\n", error.f_str());
                 return false;
             }
             else
@@ -379,8 +371,7 @@ bool updateNameRecord()
         }
         else
         {
-            printf("Error code: ");
-            Serial0.println(httpResponseCode);
+            printf("Error code: %d\n", httpResponseCode);
             http.end();
             return false;
         }

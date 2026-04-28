@@ -262,6 +262,7 @@ void WiFiInfoToJson()
         JsonObject nested = scan.createNestedObject(networks[i].ssid);
         nested["rssi"] = networks[i].rssi;
     }
+    delete[] networks; //!< heap-allocated by getVisibleNetworks — must free
 
     SavedNetwork *savedNetworks = wifiNetworks->getSavedNetworks(s);
     JsonObject n = doc.createNestedObject("networks");
@@ -272,6 +273,7 @@ void WiFiInfoToJson()
         nested["rssi"] = savedNetworks[i].rssi;
         nested["visible"] = savedNetworks[i].visible;
     }
+    delete[] savedNetworks; //!< heap-allocated by getSavedNetworks — must free
     serializeJson(doc, str);
 }
 

@@ -27,10 +27,10 @@ void _callback(FtpOperation ftpOperation, unsigned int freeSpace, unsigned int t
     switch (ftpOperation)
     {
     case FTP_CONNECT:
-        Serial0.print(F("FTP: Connected!\n"));
+        printf("FTP: Connected!\n");
         break;
     case FTP_DISCONNECT:
-        Serial0.print(F("FTP: Disconnected!\n"));
+        printf("FTP: Disconnected!\n");
         break;
     case FTP_FREE_SPACE_CHANGE:
         printf("FTP: Free space change, free %u of %u!\n", freeSpace, totalSpace);
@@ -54,16 +54,16 @@ void _transferCallback(FtpTransferOperation ftpOperation, const char *name, unsi
     switch (ftpOperation)
     {
     case FTP_UPLOAD_START:
-        Serial0.print(F("FTP: Upload start!\n"));
+        printf("FTP: Upload start!\n");
         break;
     case FTP_UPLOAD:
         printf("FTP: Upload of file %s byte %u\n", name, transferredSize);
         break;
     case FTP_TRANSFER_STOP:
-        Serial0.print(F("FTP: Finish transfer!\n"));
+        printf("FTP: Finish transfer!\n");
         break;
     case FTP_TRANSFER_ERROR:
-        Serial0.print(F("FTP: Transfer error!\n"));
+        printf("FTP: Transfer error!\n");
         break;
     default:
         break;
@@ -80,7 +80,7 @@ void setupFtp()
     //! Ensure LittleFS is mounted
     if (!LittleFS.begin(false))
     {
-        Serial0.print(F("FTP: Failed to mount LittleFS\n"));
+        printf("FTP: Failed to mount LittleFS\n");
         return;
     }
 

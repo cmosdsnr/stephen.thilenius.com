@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react"
+import React, { Suspense, useEffect, useState } from "react"
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { Toaster } from 'react-hot-toast'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -15,7 +15,9 @@ import { PrivateRoute, PrivateVerifiedRoute, PrivateBorrowerRoute } from './Navi
 import { useData } from "../contexts/DataContext";
 
 import crest from "../images/crest_hi_res_small.gif"
-import name from "../images/ThileniusFamily.png"
+import './Navigation/ThNavbar.css'
+import { API } from '../api'
+import versionData from '../version.json'
 
 import Logout from "./Navigation/Logout"
 import { useWindow } from "../hooks/useWindow";
@@ -53,6 +55,7 @@ const OldWordle    = React.lazy(() => import('./Games/OldWordle/OldWordle'))
 const Blossom      = React.lazy(() => import('./Games/Blossom/Blossom'))
 const Sandbox      = React.lazy(() => import('./Games/Wordle/src/Sandbox'))
 const Primes       = React.lazy(() => import('./Games/Primes/Primes').then(m => ({ default: m.Primes })))
+const Sudoku       = React.lazy(() => import('./Games/Sudoku/Sudoku'))
 
 
 function Verify() {
@@ -73,25 +76,37 @@ function Verify() {
 
 function Header() {
     return (
-        <Row style={{ paddingBottom: "10px" }}>
-            <Col sm={3} md={2} className="d-none d-sm-inline" style={{ paddingLeft: "40px" }}>
-                <img className="headerCrestImage" src={crest} alt="Thilenius Family Crest" />
-            </Col>
-            <Col xs={12} sm={9} md={8} >
-                <img className="headerScriptImage" src={name} alt="Thilenius Family Script" />
-            </Col>
-            <Col md={2} className="d-none d-md-inline" style={{ paddingRight: "40px" }}>
-                <img className="headerCrestImage" src={crest} alt="Thilenius Family Crest" />
-            </Col>
-        </Row>
-
+        <div className="th-header-band">
+            <img className="th-header-crest" src={crest} alt="Thilenius Family Crest" />
+            <div className="th-header-title">
+                <span className="th-header-name">Thilenius</span>
+                <span className="th-header-sub">· Family ·</span>
+            </div>
+            <img className="th-header-crest d-none d-sm-block" src={crest} alt="Thilenius Family Crest" />
+        </div>
     )
 }
 
 function App() {
-    const showGridSize = true;
-
+    const [showGridSize, setShowGridSize] = useState(() => localStorage.getItem('showGridSize') !== 'false');
     const width = useWindow();
+    const [backendVersion, setBackendVersion] = useState<string>('...');
+
+    useEffect(() => {
+        fetch(API.version())
+            .then(r => r.json())
+            .then(d => setBackendVersion(d.version))
+            .catch(() => setBackendVersion('?'));
+    }, []);
+
+    useEffect(() => {
+        const handler = (e: CustomEvent) => {
+            setShowGridSize(e.detail);
+            localStorage.setItem('showGridSize', e.detail ? 'true' : 'false');
+        };
+        window.addEventListener('toggleGridSize', handler as EventListener);
+        return () => window.removeEventListener('toggleGridSize', handler as EventListener);
+    }, []);
     // setup google at https://console.cloud.google.com/apis/credentials?project=stephen-428521
     const { pb, logoutEvent } = useData();
 
@@ -114,18 +129,6 @@ function App() {
                 <BrowserRouter>
                     {/* <Modals /> */}
                     <Container fluid className="px-0">
-                        {showGridSize ?
-                            <center>
-                                <Row>
-                                    <Col xs={12} className="d-sm-none" > Extra Small {width}</Col>
-                                    <Col sm={12} className="d-none d-sm-block d-md-none">Small {width}</Col>
-                                    <Col md={12} className="d-none d-md-block d-lg-none">Medium {width}</Col>
-                                    <Col md={12} className="d-none d-lg-block d-xl-none">Large {width}</Col>
-                                    <Col md={12} className="d-none d-xl-block">Extra Large {width}</Col>
-                                </Row>
-                            </center>
-                            : null
-                        }
                         <Header />
                         <ModalProvider>
                             <Modals />
@@ -150,6 +153,7 @@ function App() {
                             <Route path="/games/OldWordle" element={<OldWordle />} />
                             <Route path="/games/Blossom" element={<Blossom />} />
                             <Route path="/games/Primes" element={<Primes />} />
+                            <Route path="/games/Sudoku" element={<Sudoku />} />
 
                             <Route path="/recordings" element={<PrivateRoute><Recordings /></PrivateRoute>} />
                             <Route path="/recordings/transcriptionEmmy" element={<PrivateRoute><Transcription who={"Emmy"} /></PrivateRoute>} />
@@ -200,6 +204,22 @@ function App() {
             </DataProvider>
         </WssProvider>
         <Toaster position="bottom-right" />
+        {showGridSize && (
+            <div style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+                backgroundColor: 'rgba(0,0,0,0.75)', color: '#fff',
+                fontSize: 11, textAlign: 'center', padding: '2px 0',
+                pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+                <span style={{ position: 'absolute', left: 8 }}>Front End: {versionData.version}</span>
+                <span className="d-sm-none">XS {width}px</span>
+                <span className="d-none d-sm-block d-md-none">SM {width}px</span>
+                <span className="d-none d-md-block d-lg-none">MD {width}px</span>
+                <span className="d-none d-lg-block d-xl-none">LG {width}px</span>
+                <span className="d-none d-xl-block">XL {width}px</span>
+                <span style={{ position: 'absolute', right: 8 }}>Back End: {backendVersion}</span>
+            </div>
+        )}
         {/* </AuthProvider> */}
         </QueryClientProvider>
     )

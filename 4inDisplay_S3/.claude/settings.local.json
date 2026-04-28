@@ -6,7 +6,11 @@
       "Bash(cmd:*)",
       "Bash(yarn docs:generate)",
       "Bash(yarn node:*)",
-      "Bash(node -e \"const fs = require\\('fs'\\); try { const r = fs.readdirSync\\('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\192.168.0.5\\\\\\\\\\\\\\\\passport\\\\\\\\\\\\\\\\stephen\\\\\\\\\\\\\\\\docs\\\\\\\\\\\\\\\\espServer'\\); console.log\\('accessible, files:', r.length\\); } catch\\(e\\) { console.log\\('error:', e.message\\); }\")"
+      "Bash(node -e \"const fs = require\\('fs'\\); try { const r = fs.readdirSync\\('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\192.168.0.5\\\\\\\\\\\\\\\\passport\\\\\\\\\\\\\\\\stephen\\\\\\\\\\\\\\\\docs\\\\\\\\\\\\\\\\espServer'\\); console.log\\('accessible, files:', r.length\\); } catch\\(e\\) { console.log\\('error:', e.message\\); }\")",
+      "Bash(yarn build:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep:*)",
+      "Bash(powershell:*)"
     ]
   }
 }

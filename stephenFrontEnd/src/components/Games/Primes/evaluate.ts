@@ -1,34 +1,38 @@
-function isPrime(primes: number[][], n: number): boolean {
-  for (let i = 0; i < primes.length - 1; i++) {
-    if (n % primes[i][0] === 0) return false;
-    if (primes[i][0] * primes[i][0] > n) break;
+// Sieve primes are passed as a plain Uint32Array of prime values (no periods needed).
+// Results are returned as an interleaved Uint32Array: [prime0, period0, prime1, period1, …]
+// Using typed arrays lets the main thread transfer results zero-copy and avoids
+// allocating millions of [prime, period] JS objects.
+
+function isPrime(sieve: Uint32Array, sieveLen: number, n: number): boolean {
+  for (let i = 0; i < sieveLen; i++) {
+    const p = sieve[i];
+    if (n % p === 0) return false;
+    if (p * p > n) break;
   }
   return true;
 }
 
-function nextPrime(primes: number[][], start: number): number {
+function nextPrime(sieve: Uint32Array, sieveLen: number, start: number): number {
   let n = 0;
   if (start % 6 === 5) n = start + 2;
   else if (start % 6 === 1) {
     n = start + 6;
-    if (isPrime(primes, start + 4)) return start + 4;
+    if (isPrime(sieve, sieveLen, start + 4)) return start + 4;
   } else {
-    // console.log("starting with non-prime: ", start);
     if (start % 6 === 0) n = start + 1;
     else {
       n = start + (5 - (start % 6));
-      if (isPrime(primes, n)) return n;
+      if (isPrime(sieve, sieveLen, n)) return n;
       n += 2;
     }
   }
-  // now aligned to 6k+1
-  while (1) {
-    if (isPrime(primes, n)) return n;
-    if (isPrime(primes, n + 4)) return n + 4;
+  while (true) {
+    if (isPrime(sieve, sieveLen, n)) return n;
+    if (isPrime(sieve, sieveLen, n + 4)) return n + 4;
     n += 6;
   }
-  return n;
 }
+
 function modPow(base: bigint, exp: bigint, mod: bigint): bigint {
   let result = 1n;
   base %= mod;
@@ -55,34 +59,33 @@ function periodOf10Optimized(p: number): number {
   const mod = BigInt(p);
   const divisors = getDivisors(p - 1);
   for (const d of divisors) {
-    if (modPow(10n, BigInt(d), mod) === 1n) {
-      return d;
-    }
+    if (modPow(10n, BigInt(d), mod) === 1n) return d;
   }
-  return 0; // shouldn't happen for prime p
+  return 0;
 }
 
-export function scanRange(primes: number[][], from: number, to: number): { primes: number[][]; duration: number } {
-  //   console.log("scanning range: ", from, to);
-  let n = from;
+/**
+ * Scan [from, to) for primes, computing the decimal period of 1/p for each.
+ * @param sieve   Uint32Array of prime values (not pairs) up to √to
+ * @param sieveLen number of valid entries in sieve
+ * @param from    range start (inclusive)
+ * @param to      range end (exclusive)
+ * @returns interleaved Uint32Array [prime0, period0, prime1, period1, …]
+ */
+export function scanRange(
+  sieve: Uint32Array,
+  sieveLen: number,
+  from: number,
+  to: number
+): { data: Uint32Array; duration: number } {
   const startTime = Date.now();
-  let period = 0;
-  const newPrimes: number[][] = [];
+  const buf: number[] = [];
 
-  n = nextPrime(primes, n);
+  let n = nextPrime(sieve, sieveLen, from);
   while (n < to) {
-    // period = getRepeatingPeriod(n);
-    period = periodOf10Optimized(n);
-    newPrimes.push([n, period]);
-    n = nextPrime(primes, n);
+    buf.push(n, periodOf10Optimized(n));
+    n = nextPrime(sieve, sieveLen, n);
   }
-  return { primes: newPrimes, duration: Date.now() - startTime };
-}
 
-// console.log(
-//     `There were ${cnt} primes between ${from} and ${to}`,
-//     `\nMax (n-1)/period: ${maxPeriod}`,
-//     `\nFor prime: ${prime}`,
-//     `\nPeriod: ${(prime - 1n) / maxPeriod}`,
-//     `\nTime: ${Date.now() - startTime}ms`
-// );
+  return { data: new Uint32Array(buf), duration: Date.now() - startTime };
+}

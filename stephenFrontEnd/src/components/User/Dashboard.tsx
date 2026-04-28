@@ -1,54 +1,87 @@
-import React from 'react'
-import { Row, Col, Card, Button } from 'react-bootstrap'
-
-import { useData } from '../../contexts/DataContext'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AdminMenu } from '../Administrator/AdminMenu'
+import { useData } from '../../contexts/DataContext'
+import AdminPageLayout from '../Administrator/AdminPageLayout'
 import Avatar from './Avatar'
-
+import '../Administrator/AdminMenu.css'
 
 export default function Dashboard() {
-    const { pb } = useData();
+    const { pb } = useData()
     const navigate = useNavigate()
+    const model = pb.authStore.model
+
+    if (!pb.authStore.isValid) {
+        navigate('/logout')
+        return null
+    }
+
+    const [showBar, setShowBar] = useState(() => localStorage.getItem('showGridSize') !== 'false');
+
+    const toggleBar = () => {
+        const next = !showBar;
+        setShowBar(next);
+        window.dispatchEvent(new CustomEvent('toggleGridSize', { detail: next }));
+    };
+
+    const hasSettings =
+        model?.settings != null &&
+        Object.keys(model.settings).length > 0
 
     return (
-        <>
-            {pb.authStore.isValid ?
-                <>
-                    <AdminMenu offset={0} span={12} />
-                    <div className="w-100 mx-auto pt-4 max-w-[500px]">
-                        <Card>
-                            <Card.Body>
-                                <Row>
-                                    <Col xs={8}>
-                                        <h2 className="text-center mb-4">Profile</h2>
-                                    </Col>
-                                    <Col xs={4}>
-                                        <Avatar />
-                                    </Col>
-                                </Row>
-                                <Row>
-                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Name:</strong></div><div className="[flex:70%]">{pb.authStore.model?.name}</div></div>
-                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Email:</strong></div><div className="[flex:70%]">{pb.authStore.model?.email}</div></div>
-                                    <div className="flex"><div className="[flex:30%] text-right"><strong>Role: </strong></div><div className="[flex:70%]">{pb.authStore.model?.role}</div></div>
-                                    {pb.authStore.model?.settings != null && Object.keys(pb.authStore.model?.settings).length > 0 && <>
-                                        <div className="flex"><div className="[flex:30%] text-right"><strong>settings info:</strong></div><div className="[flex:70%]"></div></div>
-                                        {Object.keys(pb.authStore.model.settings).map((key, index) => <div key={index} className="row"><div className="column1"><strong>{key}:</strong></div><div className="[flex:50%]">{pb.authStore.model.settings[key]}</div></div>)}
-                                    </>
-                                    }
-                                    <div className="mx-auto mt-[10px] w-[200px]">
-                                        <Link to="/update-profile" className="btn btn-primary w-100">Update Profile</Link>
-                                    </div>
-                                </Row>
-                            </Card.Body>
-                        </Card>
-                        <div className="w-100 text-center mt-2">
-                            <Button variant="link" onClick={() => navigate('/Logout')}>Log Out</Button>
-                        </div>
+        <AdminPageLayout title={model?.name || 'Dashboard'} eyebrow={model?.role || ''}>
+
+            {/* ── Profile Strip ─────────────────────────────────── */}
+            <div className="th-profile-panel">
+                <div className="th-avatar-wrap">
+                    <Avatar />
+                </div>
+
+                <div className="th-profile-info">
+                    <div className="th-profile-name">
+                        {model?.name || 'User'}
                     </div>
-                </>
-                : <Logout />
-            }
-        </>
+                    <div className="th-profile-email">
+                        {model?.email}
+                    </div>
+
+                    <div className="th-profile-meta">
+                        {model?.role && (
+                            <span className="th-role-badge">{model.role}</span>
+                        )}
+                    </div>
+
+                    {hasSettings && (
+                        <div className="th-settings-row">
+                            {Object.keys(model.settings).map((key, i) => (
+                                <div key={i}>
+                                    <span className="th-settings-key">{key}:</span>
+                                    {model.settings[key]}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="th-profile-actions">
+                        <Link to="/update-profile" className="th-btn-primary">
+                            Edit Profile
+                        </Link>
+                        <button
+                            className="th-btn-ghost"
+                            onClick={() => navigate('/logout')}
+                        >
+                            Sign Out
+                        </button>
+                    </div>
+
+                    <div className="th-settings-row" style={{ marginTop: '0.75rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={showBar} onChange={toggleBar} />
+                            Show version/size bar
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </AdminPageLayout>
     )
 }

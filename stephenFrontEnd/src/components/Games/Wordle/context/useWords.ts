@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "react-query";
 import shortWordListFile from "../txt/words2309.txt";
 import longWordListFile from "../txt/words8916.txt";
 import optionWords from "../txt/words11435.txt";
+import pb from "../../../../lib/pocketBase";
 
 /**
  * Tracks frequency and distribution stats for letters across word lists.
@@ -25,6 +26,13 @@ export function useWords() {
    * Full word list used for evaluating guesses (from optionWords).
    */
   const [isWord, setIsWord] = useState<boolean>(true);
+  const [invalidWords, setInvalidWords] = useState<string[]>([]);
+
+  useEffect(() => {
+    pb.collection('miscellaneous').getOne('000invalidwords')
+      .then(record => { if (record?.data?.words) setInvalidWords(record.data.words); })
+      .catch(() => {});
+  }, []);
 
   /**
    * Allowed solutions that can be selected as the target word.
@@ -142,6 +150,21 @@ export function useWords() {
     loadList(shortWordListFile);
   };
 
+  const effectiveAllWords = useMemo(
+    () => invalidWords.length ? allWords.filter(w => !invalidWords.includes(w)) : allWords,
+    [allWords, invalidWords]
+  );
+
+  const removeWord = (word: string) => {
+    setInvalidWords(prev => [...prev, word]);
+    pb.collection('miscellaneous').getOne('000invalidwords').then(record => {
+      const existing: string[] = record?.data?.words || [];
+      if (!existing.includes(word)) {
+        pb.collection('miscellaneous').update('000invalidwords', { data: { words: [...existing, word] } });
+      }
+    });
+  };
+
   /**
    * check if word is in allWords and set isWord.
    */
@@ -171,5 +194,5 @@ export function useWords() {
   const error = allWordsError || shortListError;
 
   // Return state and utilities
-  return { allWords, allowedSolutions, letterCounts, isWord, isLoading, error, checkWord, loadShortList, loadLongList };
+  return { allWords: effectiveAllWords, allowedSolutions, letterCounts, isWord, isLoading, error, checkWord, loadShortList, loadLongList, removeWord };
 }

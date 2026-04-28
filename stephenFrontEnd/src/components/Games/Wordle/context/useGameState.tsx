@@ -54,12 +54,25 @@ export function useGameState(getNextBestWord: (c: GameStep, idx: number) => Prom
 
     // reset the game to the initial state
     const reset = () => {
-        const t = { ...template };
+        const t: GameStep = {
+            ...template,
+            accuracies: Array(8).fill(0).map(() => Array(5).fill(0)),
+            exactMatched: Array(8).fill(0).map(() => Array(5).fill("")),
+            matched: Array(8).fill(null).map(() => []),
+            unmatched: Array(8).fill(null).map(() => []),
+            finished: Array(8).fill(false),
+            greyed: Array(8).fill(false),
+            nextFinished: Array(8).fill(false),
+            usedLetters: [],
+            solvedWords: [],
+            outputLists: Array(8).fill([]),
+            combinedList: [],
+        };
         t.inputLists = Array(8).fill([...allowedSolutions]);
-        t.word = firstGuess
+        t.word = firstGuess;
         updateNextList(t, 0); // will do it based on accuracies are unset at this point
-        const w = t.outputLists[0]
-        t.outputLists = Array(8).fill([...w])
+        const w = t.outputLists[0];
+        t.outputLists = Array(8).fill([...w]);
         setCurrent(t);
         setGameData([t]);
     };

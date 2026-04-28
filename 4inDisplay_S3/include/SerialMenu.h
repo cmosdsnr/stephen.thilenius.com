@@ -67,6 +67,7 @@ constexpr MenuItem menu0[] = {{'1', "SSID menu", 0, nullptr},
                               {'j', "Scan I2C Bus", 0, nullptr},
                               {'k', "Show current time", 0, nullptr},
                               {'l', "Setup time from NTP", 0, nullptr},
+                              {'o', "Show all events", 0, nullptr},
                               {'?', "This help", 0, nullptr}};
 
 constexpr MenuItem menu1[] = {{'0', "Main menu", 0, nullptr},

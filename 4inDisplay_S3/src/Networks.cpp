@@ -7,13 +7,12 @@ using fs::FS;
 #include "HostName.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include "esp_wifi.h"
 
 /**
  * @file Networks.cpp
  * @brief WiFi network manager implementation.
  */
-
-bool successfulCon = false; //!< record of if we connected properly to WiFi
 
 /**
  * @brief Construct a new Networks object.
@@ -61,33 +60,57 @@ void Networks::loop()
         {
             handleConnectionSuccess();
         }
-        else if (millis() - connectStartTime > 15000)
+        else if (millis() - connectStartTime > 20000)
         {
-            if (waitForever)
-            {
-                if (millis() - connectStartTime > 20000)
-                    ESP.restart();
-            }
-            else
-            {
-                handleConnectionFailure();
-            }
+            Report.printf("⏱ WiFi connect timed out — clearing selection, falling back to scan\n");
+            connecting = false;
+            eepromConnectAttempt = false;
+            WiFi.disconnect(true);
+            selectedNetwork = nullptr;
+            selectedIndex = -1;
         }
         return;
     }
 
     if (WiFi.status() != WL_CONNECTED && WiFi.getMode() == WIFI_STA)
     {
-        //! see if there is a network to connect to
+        //! enforce 30s cooldown between connection attempts
+        if (millis() - lastConnectAttemptTime < 30000)
+            return;
+
+        bool found = false;
         for (int i = 0; i < count; i++)
             if (networks[i].visible && networks[i].password.length() > 0)
             {
                 selectedIndex = i;
                 selectedNetwork = &networks[i];
                 networksChanged = true;
+                lastConnectAttemptTime = millis();
                 wifiConnect();
+                found = true;
                 break;
             }
+
+        //! fallback: retry last known network even if not visible in scan
+        //! (covers brief dropouts where AP is reachable but weak)
+        if (!found && selectedNetwork != nullptr && selectedNetwork->password.length() > 0)
+        {
+            networksChanged = true;
+            lastConnectAttemptTime = millis();
+            wifiConnect();
+            found = true;
+        }
+
+        //! nothing found — rescan every 2 minutes
+        if (!found)
+        {
+            if (lastRescanTime == 0 || millis() - lastRescanTime > 120000)
+            {
+                lastRescanTime = millis();
+                Report.printf("🔄 No saved network visible — rescanning\n");
+                scanNetworks();
+            }
+        }
     }
 }
 
@@ -101,17 +124,18 @@ void Networks::initialize()
     EpromData data = loadWiFiConfig();
     if (data.magicByte == MAGIC_BYTE)
     {
-        printf("Fast Connecting to saved network: %s\n", data.ssid);
+        Report.printf("Fast Connecting to saved network: %s\n", data.ssid);
         WiFi.disconnect(true);
         WiFi.mode(WIFI_STA);
         WiFi.setHostname(REPORT_NAME);
         WiFi.begin(data.ssid, data.password, data.channel, (uint8_t *)data.bssid);
         connecting = true;
+        eepromConnectAttempt = true;
         connectStartTime = millis();
     }
     else
     {
-        printf("No valid WiFi config in EEPROM, starting normal initialization.\n");
+        Report.printf("No valid WiFi config in EEPROM, starting normal initialization.\n");
     }
 
     readNetworkFile();
@@ -123,8 +147,8 @@ void Networks::initialize()
  */
 void Networks::scanNetworks()
 {
-    scanFailTime = 0;         //!< cancel any pending retry
-    WiFi.scanDelete();        //!< clear stale results so we don't get 0 from a cached scan
+    scanFailTime = 0;  //!< cancel any pending retry
+    WiFi.scanDelete(); //!< clear stale results so we don't get 0 from a cached scan
     scanning = true;
     WiFi.scanNetworks(true);
     Report.print("Starting WiFi Scan...\n");
@@ -153,7 +177,7 @@ bool Networks::processScanResults()
     else
     { //!< Found Zero or more Wireless Networks
         scanning = false;
-        printf("Found %d networks\n", WiFiScanStatus);
+        Report.printf("Found %d networks\n", WiFiScanStatus);
         for (uint8_t i = 0; i < WiFiScanStatus; i++)
             addNetwork(WiFi.SSID(i), "", true, WiFi.RSSI(i));
         networksChanged = true; //!< flag for tabNetworks
@@ -288,8 +312,12 @@ int Networks::findIndex(int i)
     int countOut;
     SavedNetwork *savedNetworks = getSavedNetworks(countOut);
     if (i < 0 || i >= countOut)
+    {
+        delete[] savedNetworks;
         return -1;
+    }
     String ssid = savedNetworks[i].ssid;
+    delete[] savedNetworks; //!< copy ssid first, then free
     for (int j = 0; j < count; j++)
     {
         if (networks[j].ssid == ssid)
@@ -298,32 +326,6 @@ int Networks::findIndex(int i)
         }
     }
     return -1;
-}
-
-/**
- * @brief WiFi event callback handler.
- *
- * Reboots the device on disconnection if a previous connection was established.
- *
- * @param event The WiFi event type.
- */
-void WiFiEvent(WiFiEvent_t event)
-{
-    switch (event)
-    {
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        if (successfulCon)
-        { //!< if we were connected before, then we lost connection
-            Report.print("Attempting to reboot and reconnect");
-            ESP.restart();
-        }
-        else
-        {
-        }
-        break;
-    default:
-        break;
-    }
 }
 
 /**
@@ -339,20 +341,14 @@ void Networks::wifiConnect()
     }
     WiFi.disconnect(true);
     WiFi.mode(WIFI_STA);
-
-    WiFi.onEvent(WiFiEvent);
+    WiFi.setAutoReconnect(true); //!< let the framework attempt reconnection on drop
     WiFi.setHostname(REPORT_NAME);
-    IPAddress local_ip(192, 168, 0, 94);
-    IPAddress gateway(192, 168, 0, 1);
-    IPAddress subnet(255, 255, 255, 0);
-    IPAddress dns1(8, 8, 8, 8);
-    IPAddress dns2(8, 8, 4, 4);
 
     String ssid = selectedNetwork->ssid;
     String password = selectedNetwork->password;
     if (ssid.length() > 0)
     {
-        printf("Connecting to SSID: %s with password: %s\n", ssid.c_str(), password.c_str());
+        Report.printf("Connecting to SSID: %s with password: %s\n", ssid.c_str(), password.c_str());
         WiFi.begin(ssid.c_str(), password.c_str()); //!< start connecting to WiFi
 
         connecting = true;
@@ -361,9 +357,22 @@ void Networks::wifiConnect()
 }
 
 /**
- * @brief Handles a failed WiFi connection attempt.
+ * @brief Manually enters AP mode (user-triggered via UI or serial menu).
  *
- * Falls back to Access Point mode with a captive portal and mDNS.
+ * Disconnects from any current network and starts a captive portal.
+ */
+void Networks::enterApMode()
+{
+    WiFi.disconnect(true);
+    connecting = false;
+    handleConnectionFailure();
+}
+
+/**
+ * @brief Handles a failed or manually-triggered WiFi disconnection.
+ *
+ * Starts the device as a soft AP with a captive DNS portal so the user can
+ * configure new credentials. mDNS is registered for host name resolution.
  */
 void Networks::handleConnectionFailure()
 {
@@ -372,8 +381,9 @@ void Networks::handleConnectionFailure()
     selectedIndex = -1;
     selectedNetwork = nullptr;
     networksChanged = true; //!< force display redraw
-    if (scanFailTime > 0) scanNetworks(); //!< retry scan that was deferred during connecting
-    printf("❌ Wi-Fi failed to connected.\n");
+    if (scanFailTime > 0)
+        scanNetworks(); //!< retry scan that was deferred during connecting
+    Report.printf("❌ Wi-Fi failed to connected.\n");
     WiFi.disconnect();
     //! Connect to Wi-Fi network with SSID and password
     //! Remove the password parameter, if you want the AP (Access Point) to be open
@@ -408,6 +418,9 @@ void Networks::handleConnectionSuccess()
     connecting = false;
     _apMode = false;
     Inet = true;
+    eepromConnectAttempt = false;
+    lastRescanTime = 0;
+    lastConnectAttemptTime = 0;
     setupTime();
     //! If fast-connect (EEPROM path) left selectedIndex unset, find the connected SSID in our list
     if (selectedIndex < 0)
@@ -423,30 +436,72 @@ void Networks::handleConnectionSuccess()
             }
         }
     }
-    if (scanFailTime > 0) scanNetworks(); //!< retry scan that was deferred during connecting
+    if (scanFailTime > 0)
+        scanNetworks(); //!< retry scan that was deferred during connecting
 
-    printf("\n\nNetwork Configuration:\n");
-    printf("----------------------\n");
-    printf("         SSID: %s\n", WiFi.SSID().c_str());
-    printf("  Wifi Status: %d\n", WiFi.status());
-    printf("Wifi Strength: %d dBm\n", WiFi.RSSI());
-    printf("          MAC: %s\n", WiFi.macAddress().c_str());
-    printf("           IP: %s\n", WiFi.localIP().toString().c_str());
-    printf("       Subnet: %s\n", WiFi.subnetMask().toString().c_str());
-    printf("      Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
-    printf("        DNS 1: %s\n", WiFi.dnsIP(0).toString().c_str());
-    printf("        DNS 2: %s\n", WiFi.dnsIP(1).toString().c_str());
-    printf("        DNS 3: %s\n", WiFi.dnsIP(2).toString().c_str());
+    Report.printf("\n\nNetwork Configuration:\n");
+    Report.printf("----------------------\n");
+    Report.printf("         SSID: %s\n", WiFi.SSID().c_str());
+    Report.printf("  Wifi Status: %d\n", WiFi.status());
+    Report.printf("Wifi Strength: %d dBm\n", WiFi.RSSI());
+    Report.printf("          MAC: %s\n", WiFi.macAddress().c_str());
+    Report.printf("           IP: %s\n", WiFi.localIP().toString().c_str());
+    Report.printf("       Subnet: %s\n", WiFi.subnetMask().toString().c_str());
+    Report.printf("      Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
+    Report.printf("        DNS 1: %s\n", WiFi.dnsIP(0).toString().c_str());
+    Report.printf("        DNS 2: %s\n", WiFi.dnsIP(1).toString().c_str());
+    Report.printf("        DNS 3: %s\n", WiFi.dnsIP(2).toString().c_str());
 
     saveWiFiConfig();
+    esp_wifi_set_ps(WIFI_PS_NONE); //!< disable power saving — prevents radio sleeping and dropping at distance
 
+    extern char bootDiag[];
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
-    String url = "https://stephen.stephen-c19.workers.dev/api/esp/register";
+    String url = "https://stephen.stephen-c19.workers.dev/api/esp/register?ip=";
+    url += WiFi.localIP().toString();
+    url += "&diag=";
+    String diag = String(bootDiag);
+    diag.replace(" ", "+");
+    url += diag;
     http.begin(client, url);
+    http.setTimeout(8000); //!< cap blocking call — default is ~75 s which freezes the main loop
     int code = http.GET();
-    printf("ESP register: %s -> %d\n", url.c_str(), code);
+    Report.printf("ESP register: %d  diag: %s\n", code, bootDiag);
+    http.end();
+}
+
+/**
+ * @brief Sends a periodic heartbeat to the backend with uptime and heap info.
+ *
+ * Called from clockLoop() every 5 minutes when WiFi is connected. Provides a
+ * timeline in the backend console so freezes can be correlated with specific
+ * events or heap exhaustion.
+ */
+void Networks::sendHeartbeat()
+{
+    if (WiFi.status() != WL_CONNECTED)
+        return;
+    extern char bootDiag[];
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    String url = "https://stephen.stephen-c19.workers.dev/api/esp/heartbeat?ip=";
+    url += WiFi.localIP().toString();
+    url += "&uptime=";
+    url += String(millis() / 1000);
+    url += "&heap=";
+    url += String(ESP.getFreeHeap());
+    url += "&diag=";
+    String d = bootDiag;
+    d.replace(" ", "+");
+    url += d;
+    http.begin(client, url);
+    http.setTimeout(6000);
+    int code = http.GET();
+    Report.printf("❤️ heartbeat: %d  uptime=%lus heap=%lu\n",
+           code, millis() / 1000, (unsigned long)ESP.getFreeHeap());
     http.end();
 }
 
@@ -561,8 +616,12 @@ bool Networks::removeNetwork(uint8_t i)
     int countOut;
     SavedNetwork *savedNetworks = getSavedNetworks(countOut);
     if (i < 0 || i >= countOut)
+    {
+        delete[] savedNetworks;
         return false;
+    }
     String ssid = savedNetworks[i].ssid;
+    delete[] savedNetworks; //!< copy ssid first, then free
 
     //! find the network in the main list
     int indexToRemove = -1;

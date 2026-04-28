@@ -15,7 +15,7 @@ import {
 import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-adapter-date-fns';
 import { useWss } from '../../contexts/WssContext';
-import { AdminMenu } from './AdminMenu';
+import AdminPageLayout from './AdminPageLayout';
 import { useInterval } from '../../hooks/useInterval';
 import { API } from '../../api';
 import { SkeletonChart } from '../Skeleton';
@@ -186,22 +186,77 @@ const Ultimeter = () => {
         },
     };
 
+    const rangeButtons = [
+        { label: 'Past 1 Day', days: 1 },
+        { label: 'Past 4 Days', days: 4 },
+        { label: 'Past 7 Days', days: 7 },
+    ];
+
     return (
-        <div>
-            <AdminMenu span={4} offset={8} />
-            <h1>Ultimeter Wind Data</h1>
-            <p style={{ textAlign: "center", color: tooLong ? "red" : "black" }}>last Update: {lastSeen}</p>
-            {tooLong && <div style={{ color: 'red' }}>No data received in the last 200 seconds</div>}
-            <div style={{ marginBottom: '1rem' }}>
-                <button onClick={() => selectRange(1)}>Past 1 Day</button>
-                <button onClick={() => selectRange(4)}>Past 4 Days</button>
-                <button onClick={() => selectRange(7)}>Past 7 Days</button>
+        <AdminPageLayout title="Ultimeter Wind Data" subtitle={
+            <p style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '0.75rem', color: tooLong ? '#ef4444' : '#6a9ac4', marginTop: '0.5rem' }}>
+                last update: {lastSeen}
+            </p>
+        }>
+            <div style={{ maxWidth: 960, margin: '0 auto' }}>
+
+                {/* Alert banner */}
+                {tooLong && (
+                    <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)', borderLeft: '4px solid #ef4444', borderRadius: 6, padding: '0.75rem 1.25rem', marginBottom: '1.5rem', fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem', color: '#ef4444' }}>
+                        No data received in the last 200 seconds
+                    </div>
+                )}
+
+                {/* Time range controls */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Time Range
+                        </span>
+                    </div>
+                    <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {rangeButtons.map(({ label, days }) => (
+                            <button
+                                key={days}
+                                onClick={() => selectRange(days)}
+                                style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'transparent', color: '#001830', border: '1.5px solid #e2e8f0', borderRadius: 4, padding: '0.35rem 1rem', cursor: 'pointer' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.color = '#f59e0b'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#001830'; }}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Speed chart */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Wind Speed
+                        </span>
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                        {isLoading && <SkeletonChart height={280} />}
+                        {error && <p style={{ color: '#ef4444', fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem' }}>Error: {(error as Error).message}</p>}
+                        <Line data={chartDataSpeed} options={options as any} />
+                    </div>
+                </div>
+
+                {/* Direction chart */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Wind Direction
+                        </span>
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                        <Line data={chartDataDirection} options={options as any} />
+                    </div>
+                </div>
+
             </div>
-            {isLoading && <SkeletonChart height={280} />}
-            {error && <p style={{ color: 'red' }}>Error: {(error as Error).message}</p>}
-            <Line data={chartDataSpeed} options={options as any} />
-            <Line data={chartDataDirection} options={options as any} />
-        </div>
+        </AdminPageLayout>
     );
 };
 

@@ -4,6 +4,8 @@
 #include "SerialMenu.h"
 #include "Clock.h"
 #include <WebSockets.h>
+#include "Networks.h"
+#include "Report.h"
 
 /**
  * @file Clock.cpp
@@ -27,21 +29,20 @@ void setupTime()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        printf("❌ Wi-Fi not connected. SNTP will fail.\n");
+        Report.printf("❌ Wi-Fi not connected. SNTP will fail.\n");
         return;
     }
 
     IPAddress ip;
     if (!WiFi.hostByName("pool.ntp.org", ip))
     {
-        printf("❌ DNS resolution failed for pool.ntp.org\n");
+        Report.printf("❌ DNS resolution failed for pool.ntp.org\n");
         return;
     }
-    printf("Resolved pool.ntp.org to ");
-    Serial0.println(ip);
+    Report.printf("Resolved pool.ntp.org to %s\n", ip.toString().c_str());
 
-    const char *ntpServerIP = "123.45.67.89";
-
+    if (sntp_enabled())
+        sntp_stop();
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, ntpServer);
     sntp_init();
@@ -50,7 +51,7 @@ void setupTime()
     setenv("TZ", "PST8PDT,M3.2.0,M11.1.0", 1);
     tzset();
 
-    printf("⏳ SNTP initialized, waiting for background sync...\n");
+    Report.printf("⏳ SNTP initialized, waiting for background sync...\n");
 }
 
 /**
@@ -123,8 +124,19 @@ void clockLoop()
     {
         lastRebootFlag = true;
         getLocalTime(lastReboot, sizeof(lastReboot));
-        printf("✅ Time synchronized. Local time: %s\n", getFullDateTime());
+        Report.printf("✅ Time synchronized. Local time: %s\n", getFullDateTime());
         SerialMenu.printMenu(MAIN_MENU);
-        sendEvent("START", "Wifi started");
+        sendEvent("WiFi", "Wifi started");
+        extern char bootDiag[];
+        sendEvent("Boot", bootDiag);
+    }
+
+    //! Heartbeat to backend every 5 minutes (only after NTP sync)
+    static unsigned long lastHeartbeat = 0;
+    if (lastRebootFlag && millis() - lastHeartbeat > 300000)
+    {
+        lastHeartbeat = millis();
+        extern Networks *wifiNetworks;
+        wifiNetworks->sendHeartbeat();
     }
 }

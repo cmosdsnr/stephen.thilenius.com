@@ -10,7 +10,8 @@ SHORT_NAMES    = YES
 CREATE_SUBDIRS = YES
 # ---- What to parse ----
 INPUT                  = ../
-FILE_PATTERNS          = *.h *.hpp *.c *.cc *.cpp *.ino
+FILE_PATTERNS          = *.h *.hpp *.c *.cc *.cpp *.ino *.md
+USE_MDFILE_AS_MAINPAGE = ../Readme.md
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */.pio/* */.git/* */test/* */old_code/* */docs/*
 

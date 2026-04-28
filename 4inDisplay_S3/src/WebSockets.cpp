@@ -42,8 +42,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocket
 
     if (fragmentBuffer.length() + len > WS_MAX_MSG_LEN)
     {
-        Serial0.printf("WS message too large (%u bytes), dropping\n",
-                       (unsigned)(fragmentBuffer.length() + len));
+        printf("WS message too large (%u bytes), dropping\n",
+               (unsigned)(fragmentBuffer.length() + len));
         fragmentBuffer = "";
         return;
     }
@@ -59,9 +59,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len, AsyncWebSocket
     DeserializationError error = deserializeJson(doc, fragmentBuffer);
     if (error)
     {
-        Serial0.println(fragmentBuffer);
-        Serial0.println(F("deserializeJson() failed: "));
-        Serial0.println(error.f_str());
+        printf("deserializeJson() failed: %s\nBuffer: %s\n", error.f_str(), fragmentBuffer.c_str());
         fragmentBuffer = "";
         return;
     }

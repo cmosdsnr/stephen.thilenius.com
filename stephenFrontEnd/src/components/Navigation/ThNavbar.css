@@ -1,0 +1,248 @@
+/* ═══════════════════════════════════════════════════════════
+   Site Header + Navbar  — Control Station aesthetic
+   ─────────────────────────────────────────────────────────── */
+
+/* ── Page Header Band ── */
+.th-header-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #000e1f 0%, #001830 100%);
+  padding: 14px 28px;
+  gap: 16px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+}
+
+.th-header-crest {
+  width: clamp(48px, 8vw, 80px);
+  height: auto;
+  filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.2));
+  flex-shrink: 0;
+}
+
+.th-header-title {
+  text-align: center;
+  flex: 1;
+  line-height: 1;
+}
+
+.th-header-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(2rem, 5.5vw, 4rem);
+  font-weight: 700;
+  color: #dde6f0;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  display: block;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(245, 158, 11, 0.12);
+}
+
+.th-header-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(0.55rem, 1.1vw, 0.68rem);
+  color: rgba(245, 158, 11, 0.55);
+  letter-spacing: 0.55em;
+  text-transform: uppercase;
+  display: block;
+  margin-top: 5px;
+}
+
+/* ── Navbar ── */
+.th-navbar.navbar {
+  background: #001830 !important;
+  border-bottom: 2px solid rgba(245, 158, 11, 0.3);
+  padding: 0 16px;
+  min-height: 46px;
+}
+
+/* Brand (crest in collapsed mobile view) */
+.th-navbar .navbar-brand {
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.th-navbar .navbar-brand .th-brand-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #dde6f0;
+}
+
+/* Hamburger toggle */
+.th-navbar .navbar-toggler {
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.th-navbar .navbar-toggler:focus {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.th-navbar .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28180%2C 210%2C 240%2C 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Nav links */
+.th-navbar .nav-link {
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase;
+  color: #6a9ac4 !important;
+  padding: 12px clamp(4px, 0.45vw, 10px) !important;
+  position: relative;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.th-navbar .nav-link:hover {
+  color: #f0c060 !important;
+}
+
+/* Active page indicator — amber underline */
+.th-navbar .nav-link.th-active {
+  color: #f59e0b !important;
+}
+
+.th-navbar .nav-link.th-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: #f59e0b;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Dropdown toggle arrow color */
+.th-navbar .dropdown-toggle::after {
+  border-top-color: #6a9ac4;
+  opacity: 0.7;
+}
+
+.th-navbar .nav-link:hover.dropdown-toggle::after {
+  border-top-color: #f0c060;
+}
+
+/* Dropdown menus */
+.th-navbar .dropdown-menu {
+  background: #041020;
+  border: 1px solid #1c3050;
+  border-radius: 8px;
+  padding: 6px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(245, 158, 11, 0.05);
+  min-width: 180px;
+}
+
+.th-navbar .dropdown-item {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5a8ab4;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.12s, color 0.12s;
+  border: none;
+}
+
+.th-navbar .dropdown-item:hover,
+.th-navbar .dropdown-item:focus {
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+}
+
+.th-navbar .dropdown-item svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.12s;
+}
+
+.th-navbar .dropdown-item:hover svg {
+  opacity: 1;
+}
+
+.th-navbar .dropdown-divider {
+  border-color: #1c3050;
+  margin: 4px 0;
+}
+
+/* Inline clickable nav items (Login / Sign-up) */
+.th-nav-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6a9ac4;
+  padding: 12px clamp(4px, 0.45vw, 10px);
+  cursor: pointer;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.th-nav-action:hover {
+  color: #f0c060;
+}
+
+/* Nested submenu */
+.th-navbar .dropdown-submenu {
+  position: relative;
+}
+
+.th-navbar .dropdown-submenu > .dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  display: none;
+}
+
+.th-navbar .dropdown-submenu:hover > .dropdown-menu {
+  display: block;
+}
+
+.th-navbar .dropdown-submenu > .dropdown-item::after {
+  display: inline-block;
+  margin-left: auto;
+  vertical-align: 0.255em;
+  content: "";
+  border-top: 0.3em solid transparent;
+  border-bottom: 0.3em solid transparent;
+  border-left: 0.3em solid currentColor;
+  opacity: 0.6;
+}
+
+/* Responsive: on mobile the collapsed menu gets a dark bg */
+@media (max-width: 767px) {
+  .th-navbar .navbar-collapse {
+    background: #020c18;
+    border-top: 1px solid #1c3050;
+    padding: 8px 0;
+    margin: 0 -12px;
+    padding: 8px 12px;
+  }
+
+  .th-navbar .nav-link.th-active::after {
+    left: 0;
+    right: 0;
+    bottom: auto;
+    top: 0;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+  }
+}

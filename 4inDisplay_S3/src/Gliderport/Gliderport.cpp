@@ -117,15 +117,9 @@ void sendIpAddressToServer()
     int httpResponseCode = http.GET();
 
     if (httpResponseCode > 0)
-    {
-        printf("HTTP Response code: ");
-        Serial0.println(httpResponseCode);
-    }
+        printf("HTTP Response code: %d\n", httpResponseCode);
     else
-    {
-        printf("Error code: ");
-        Serial0.println(httpResponseCode);
-    }
+        printf("Error code: %d\n", httpResponseCode);
     http.end();
 }
 

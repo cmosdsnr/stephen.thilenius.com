@@ -322,6 +322,9 @@ void handleSerialCommand(char command, char *data, AsyncWebSocketClient *client 
             printf("SD Card not mounted\n");
         }
         break;
+    case 'o': //!< Show all events
+        printEventLog();
+        break;
     case '?':
         SerialMenu.printMenu(MAIN_MENU);
         break;

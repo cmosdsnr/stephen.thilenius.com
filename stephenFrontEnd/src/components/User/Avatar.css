@@ -47,11 +47,12 @@
       gap: 0.5rem;
       width: 100%;
       height: 30vh;
-      &__container {
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-      }
+    }
+
+    .file-list__container {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
     }
   
     .file-item {

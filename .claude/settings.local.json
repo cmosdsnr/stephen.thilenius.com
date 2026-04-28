@@ -23,7 +23,23 @@
       "Bash(wc:*)",
       "Bash(grep -l \"\" \"C:/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/css/\"*.css)",
       "Bash(xargs -I{} sh -c 'echo \"=== {} ===\"; head -5 \"{}\"')",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Read(//c/Users/steph/Git/web/buddStServer/thilenius.com/gliderport/gliderport//**)",
+      "Read(//c/Users/steph/Git/web/buddStServer/gliderport/**)",
+      "Read(//c/Users/steph/Git/web/buddStServer/thilenius.com/**)",
+      "Bash(grep -r \"docs\" /c/Users/steph/Git/web/buddStServer/thilenius.com/gliderport/gliderportFrontEnd/src/api* --include=\"*.ts\" -n)",
+      "Bash(grep -r \"serverURL\" /c/Users/steph/Git/web/buddStServer/thilenius.com/Stephen/stephenFrontEnd/src/constants*)",
+      "Bash(yarn tsc:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Skill(statusline)",
+      "Bash(sed -n '196,215p' \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/Ultimeter.tsx\")",
+      "Bash(sed -n '39,58p' \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/EspTable.tsx\")",
+      "Bash(sed -n '158,177p' \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/SophiesLoan.tsx\")",
+      "Bash(grep -n \"AdminMenu\\\\|^\\\\s*</div>\\\\s*$\\\\|^\\\\s*\\)\\\\s*;\\\\s*$\" \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/PowerMeter.tsx\")",
+      "Bash(grep -n \"AdminMenu\\\\|^\\\\s*</div>\\\\s*$\" \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/SophiesLoan.tsx\")",
+      "Bash(find:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

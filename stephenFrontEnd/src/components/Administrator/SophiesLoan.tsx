@@ -5,9 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { Row, Col } from 'react-bootstrap'
 import { useData } from '../../contexts/DataContext'
-import { AdminMenu } from './AdminMenu'
+import AdminPageLayout from './AdminPageLayout'
 import "../../css/miscellaneous.css"
 import deleted from "../../images/deleted.png"
 import addTo from "../../images/add.png"
@@ -156,25 +155,39 @@ export default function SophiesLoan() {
     }
 
     return (
-        <>
-            <AdminMenu span={4} offset={8} />
-            <h5>Interest rate {100 * rate}% apr</h5>
-            <Row>
-                <Col xs={3} />
-                <Col xs={6}>
-                    <table id="sophieTable" width="100%">
-                        <tbody>
-                            <tr>
-                                <th width="3%"></th>
-                                <th>Date</th>
-                                <th>payment</th>
-                                <th>Extra</th>
-                                <th>interest</th>
-                                <th>withdraw</th>
-                                <th>balance</th>
-                            </tr>
-                            {Array.isArray(sophiesLoan) && sophiesLoan.map((transaction, i) => {
-                                return (
+        <AdminPageLayout title="Sophie's Loan" subtitle={
+            <p style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '0.75rem', color: '#6a9ac4', marginTop: '0.5rem' }}>
+                Interest rate {100 * rate}% APR
+            </p>
+        }>
+            <div style={{ maxWidth: 860, margin: '0 auto' }}>
+
+                {/* Table card */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Transactions
+                        </span>
+                        <button
+                            onClick={() => addLoan({ date: new Date(), payment: 0, extra: 0, confirmed: false })}
+                            style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: 'transparent', color: '#f59e0b', border: '1.5px solid #f59e0b', borderRadius: 4, padding: '0.3rem 1rem', cursor: 'pointer' }}
+                        >
+                            + Add Row
+                        </button>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem' }}>
+                            <thead>
+                                <tr>
+                                    {['', 'Date', 'Payment', 'Extra', 'Interest', 'Withdraw', 'Balance'].map((h, i) => (
+                                        <th key={i} style={{ background: '#001830', color: '#6a9ac4', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '1px solid #1c3050', whiteSpace: 'nowrap' }}>
+                                            {h}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.isArray(sophiesLoan) && sophiesLoan.map((transaction, i) => (
                                     <TransactionRow
                                         key={i}
                                         index={i}
@@ -184,18 +197,14 @@ export default function SophiesLoan() {
                                         setActive={setActive}
                                         remove={deleteLoan}
                                     />
-                                )
-                            })}
-                            <tr>
-                                <td><img width="20px" onClick={() => addLoan({ date: new Date(), payment: 0, extra: 0, confirmed: false })} src={addTo} alt="" /></td>
-                                <td>new</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                </Col>
-            </Row>
-        </>
+            </div>
+        </AdminPageLayout>
     )
 }
 

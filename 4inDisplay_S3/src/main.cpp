@@ -63,6 +63,28 @@ int i = 0;
 
 Networks *wifiNetworks = new Networks();
 
+// ── Boot diagnostics (survives software reset / crash, cleared on power cycle) ─
+RTC_DATA_ATTR static uint32_t _bootCount  = 0;
+RTC_DATA_ATTR static uint32_t _crashCount = 0;
+char bootDiag[80] = "";  //!< formatted boot summary, sent to backend on WiFi connect
+
+static const char *_resetReasonStr(esp_reset_reason_t r)
+{
+    switch (r)
+    {
+    case ESP_RST_POWERON:   return "PowerOn";
+    case ESP_RST_EXT:       return "ExtPin";
+    case ESP_RST_SW:        return "Software";
+    case ESP_RST_PANIC:     return "Panic";
+    case ESP_RST_INT_WDT:   return "IntWDT";
+    case ESP_RST_TASK_WDT:  return "TaskWDT";
+    case ESP_RST_WDT:       return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DeepSleep";
+    case ESP_RST_BROWNOUT:  return "Brownout";
+    default:                return "Unknown";
+    }
+}
+
 /**
  * @brief Arduino setup entry point.
  *
@@ -70,12 +92,17 @@ Networks *wifiNetworks = new Networks();
  */
 void setup(void)
 {
-    delay(100);
-    //! initializing Serial0 will print with printf and printf
-    //! initializing Serial will print with printf only
-    //! initializing Serial AND Serial0 will print with printf and printf (same as Serial0 alone)
-    //! no initialization will print with printf only
+    //! Capture reset reason before anything else — RTC vars survive software resets
+    esp_reset_reason_t _reason = esp_reset_reason();
+    _bootCount++;
+    if (_reason == ESP_RST_PANIC || _reason == ESP_RST_INT_WDT ||
+        _reason == ESP_RST_TASK_WDT || _reason == ESP_RST_WDT)
+        _crashCount++;
+    snprintf(bootDiag, sizeof(bootDiag), "%s boots=%lu crashes=%lu heap=%lu",
+             _resetReasonStr(_reason), _bootCount, _crashCount,
+             (unsigned long)ESP.getFreeHeap());
 
+    delay(100);
     spiMutex = xSemaphoreCreateMutex();
     httpsGuard = xSemaphoreCreateMutex();
 
@@ -83,6 +110,8 @@ void setup(void)
     Serial0.setTimeout(5000);
     Serial.begin(115200);
     Serial.setTimeout(5000);
+
+    Report.printf("🔁 Boot: %s\n", bootDiag);
 
     //! ADC_0db ADC_2_5db ADC_6db ADC_11db(DEFAULT)
     analogSetAttenuation(ADC_11db); //!< 0 - 2.5V
@@ -93,7 +122,7 @@ void setup(void)
 
     espChipInfo();
     printPartitionTable();
-    printf("CPU Frequency set to: %d MHz\r\n", getCpuFrequencyMhz());
+    Report.printf("CPU Frequency set to: %d MHz\r\n", getCpuFrequencyMhz());
 
     //! must be done before anything that uses I2C
     InitI2C();
@@ -110,6 +139,8 @@ void setup(void)
     setupSD();
     cacheSDFiles();
     setupLittleFS();
+    loadEventLog();  //!< restore event history from flash before anything else logs
+    loadSerialLog(); //!< restore serial terminal history from flash
     cacheFiles();
     wifiNetworks->initialize(); //!< read networks from file & scan surroundings
 
@@ -122,7 +153,7 @@ void setup(void)
     setupPSRAM();
 
     //! Start server
-    printf("Starting server\n");
+    Report.printf("Starting server\n");
 
     StartServer(false);
 

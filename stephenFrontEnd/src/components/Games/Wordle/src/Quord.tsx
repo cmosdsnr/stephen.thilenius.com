@@ -23,7 +23,7 @@ export default function Quord() {
     const [renderList, setRenderList] = useState(null);
 
     const tableRef = useRef();
-    const { gameData, topRanked, replaceWord, backOneStep, reset } = useWordle();
+    const { gameData, topRanked, replaceWord, backOneStep, reset, removeWord } = useWordle();
     const [current, setCurrent] = useState(null);
 
     useEffect(() => {
@@ -81,6 +81,7 @@ export default function Quord() {
                 topRanked={topRanked}
                 current={current}
                 replaceWord={replaceWord}
+                removeWord={removeWord}
             />}
         </>
     );

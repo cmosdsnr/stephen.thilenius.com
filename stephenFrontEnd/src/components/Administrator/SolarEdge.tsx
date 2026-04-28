@@ -5,12 +5,12 @@
  * and WebSocket integration for live updates.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery } from 'react-query';
 import { Row, Col, Spinner, Alert } from 'react-bootstrap'
 import { useWss } from '../../contexts/WssContext';
 import { API } from '../../api';
-import { AdminMenu } from './AdminMenu';
+import AdminPageLayout from './AdminPageLayout';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import './admin.css';
@@ -95,6 +95,12 @@ ChartJS.register(
     zoomPlugin
 );
 
+
+const fmtDate = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
 /** Slider marks for day selection (1-10 days) */
 const marks = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10' }
 
@@ -157,41 +163,47 @@ export default function SolarEdge() {
     const [useStartDate, setUseStartDate] = useState<boolean>(localStorage.getItem('useStartDate') == "true");
 
     /**
-     * Range params state drives the range query key so React Query re-fetches
-     * whenever the user selects a different date range.
+     * Start date of the currently displayed range. Changing this triggers a React Query re-fetch.
+     * The end date is always the current time — the backend defaults `to` to now when omitted.
      */
-    const [rangeParams, setRangeParams] = useState<{ from: Date; to: Date }>(() => {
+    const [rangeParams, setRangeParams] = useState<{ from: Date }>(() => {
         const now = new Date();
-        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0), to: now };
+        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0) };
     });
 
     /** WebSocket context for live solar data updates */
     const { solarEdgeUpdate, subscribe, unsubscribe, isReady } = useWss();
 
+    /** Ref to Chart.js instance for imperative updates that preserve zoom */
+    const chartRef = useRef<any>(null);
+
+    /** Tracks whether the WebSocket has ever gone offline (to distinguish reconnect from first connect) */
+    const wasDisconnected = useRef(false);
+
     /**
-     * React Query hook to fetch solar power data for the selected date range.
-     * Re-fetches automatically when rangeParams changes.
+     * React Query hook to fetch solar power data from `rangeParams.from` to now.
+     * The backend decimates the result to `chartWidth` points (one per display pixel).
+     * Re-fetches automatically when `rangeParams` changes.
+     * Response `stepMs` is used to compute per-point timestamps from `fromHour`.
      */
     const { data: rangeResult, isLoading: rangeLoading, error: rangeError } = useQuery(
-        ['solarEdgeRange', rangeParams.from.toISOString(), rangeParams.to.toISOString()],
+        ['solarEdgeRange', rangeParams.from.toISOString()],
         async () => {
-            console.log("loadRange", rangeParams.from, "to", rangeParams.to);
-            const response = await fetch(API.solarEdgeRange(rangeParams.from, rangeParams.to));
+            const points = chartRef.current?.width ?? 1000;
+            const response = await fetch(API.solarEdgeRange(rangeParams.from, points));
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const res = await response.json();
-            console.log(res);
-            console.log("received", res.data.length / 240.0, "hours of data");
+            console.log(`received ${res.data.length} points, stepMs=${res.stepMs}`);
             let start = 3600000 * res.fromHour;
             const data: SolarPoint[] = [];
-            res.data.forEach((dp: any) => {
+            res.data.forEach((dp: number) => {
                 data.push({ timestamp: start, power: dp / 1000 });
-                start += 15000;
+                start += res.stepMs;
             });
-            const f = new Date(start);
-            const t = new Date(start + 15000 * res.data.length);
-            const days = Math.floor((t.getTime() - f.getTime()) / (24 * 3600 * 1000));
-            const hrs = Math.floor((t.getTime() - f.getTime()) / (3600 * 1000)) - 24 * days;
-            return { solarEdgeData: data, range: { from: rangeParams.from, to: rangeParams.to, days, hrs } };
+            const totalMs = res.stepMs * res.data.length;
+            const days = Math.floor(totalMs / (24 * 3600 * 1000));
+            const hrs = Math.floor(totalMs / 3600000) - 24 * days;
+            return { solarEdgeData: data, range: { from: rangeParams.from, to: new Date(start), days, hrs } };
         },
         {
             keepPreviousData: true,
@@ -214,11 +226,14 @@ export default function SolarEdge() {
     );
 
     /**
-     * Helper to trigger a new range fetch by updating rangeParams state.
+     * Triggers a new range fetch from `from` to the current end of the database.
+     * Updates both the React Query key (causing a re-fetch) and the display range state.
+     *
+     * @param from - Start of the new range
      */
-    const loadRange = (from: Date, to: Date) => {
-        setRangeParams({ from, to });
-        setRange(prev => ({ ...prev, from, to }));
+    const loadRange = (from: Date) => {
+        setRangeParams({ from });
+        setRange(prev => ({ ...prev, from }));
     };
 
     /**
@@ -226,18 +241,16 @@ export default function SolarEdge() {
      * Automatically reloads current data when WebSocket reconnects to ensure data continuity.
      */
     useEffect(() => {
-        // if we got disconnected and then reconnected, reload data
-        if (isReady && solarEdgeData.length > 0) {
+        if (!isReady) {
+            wasDisconnected.current = true;
+        } else if (wasDisconnected.current && solarEdgeData.length > 0) {
+            wasDisconnected.current = false;
             localStorage.setItem('useStartDate', "false");
             setUseStartDate(false);
             const now = new Date();
             const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - numDays, 0, 0, 0, 0);
             setSelectedDate(from);
-            loadRange(from, now);
-            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            console.log(timeZone);
-            console.log((new Date(now.getFullYear(), now.getMonth(), now.getDate() - numDays, now.getHours(), 0, 0, 0)).toLocaleString());
-            console.log(localStorage.getItem('useStartDate'));
+            loadRange(from);
         }
     }, [isReady]);
 
@@ -260,24 +273,31 @@ export default function SolarEdge() {
         };
     }, []);
 
-    /** Live data points appended by WebSocket updates since the last range load */
-    const [livePoints, setLivePoints] = useState<SolarPoint[]>([]);
+    /** Live data points accumulated since last range load — stored as a ref to avoid re-renders */
+    const livePointsRef = useRef<SolarPoint[]>([]);
 
     /**
      * Effect hook to handle real-time solar data updates via WebSocket.
-     * Appends new data points to the live buffer when not ignoring updates.
+     * Updates the chart imperatively to preserve zoom state.
      */
     useEffect(() => {
         if (!ignoreUpdates && solarEdgeUpdate) {
-            // console.log("solarEdgeUpdate:", solarEdgeUpdate);
-            setLivePoints(prev => [...prev, { timestamp: 1000 * solarEdgeUpdate[1], power: solarEdgeUpdate[0] / 1000 }]);
+            const newPoint = { timestamp: 1000 * solarEdgeUpdate[0], power: solarEdgeUpdate[1] / 1000 };
+            livePointsRef.current.push(newPoint);
             setLastSolarEdgeUpdate(new Date());
+            if (chartRef.current) {
+                chartRef.current.data.datasets[0].data.push({ x: newPoint.timestamp, y: newPoint.power });
+                chartRef.current.update('none');
+            }
         }
     }, [solarEdgeUpdate]);
 
-    /** Reset live points whenever a new range is fetched */
+    /** Reset live points and zoom whenever a new range is fetched */
     useEffect(() => {
-        setLivePoints([]);
+        livePointsRef.current = [];
+        if (chartRef.current) {
+            chartRef.current.resetZoom();
+        }
     }, [rangeParams]);
 
     /**
@@ -295,30 +315,38 @@ export default function SolarEdge() {
     const selectRange = (days: number) => {
         const now = new Date();
         const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        loadRange(from, now);
+        loadRange(from);
     };
 
-    /** Merged data: historical from query + live WebSocket points */
-    const displayData: SolarPoint[] = [...solarEdgeData, ...livePoints];
+    /**
+     * Stable empty chart structure — never mutated by React.
+     * All data is loaded imperatively via chartRef to prevent react-chartjs-2
+     * from calling chart.update() on re-renders and resetting zoom.
+     */
+    const chartData = useMemo(() => ({
+        labels: [] as Date[],
+        datasets: [{
+            label: 'Speed',
+            data: [] as { x: number; y: number }[],
+            borderColor: chartTeal.solid,
+            backgroundColor: chartTeal.fill,
+            fill: false,
+            pointRadius: 0,
+        }],
+    }), []);
 
-    /** Chart.js data configuration for solar power visualization */
-    const chartData = {
-        labels: displayData.map(dp => new Date(dp.timestamp)),
-        datasets: [
-            {
-                label: 'Speed',
-                data: displayData.map(dp => dp.power),
-                borderColor: chartTeal.solid,
-                backgroundColor: chartTeal.fill,
-                fill: false,
-                pointRadius: 0, // Hide point markers
-            },
-        ],
-    };
+    /** When historical data arrives (or chart mounts after load), replace chart data fully */
+    useEffect(() => {
+        if (!chartRef.current || solarEdgeData.length === 0) return;
+        chartRef.current.data.labels = [];
+        chartRef.current.data.datasets[0].data = solarEdgeData.map(dp => ({ x: dp.timestamp, y: dp.power }));
+        chartRef.current.update();
+    }, [solarEdgeData, rangeLoading]);
 
     /** Chart.js options configuration with zoom/pan capabilities and styling */
-    const options = {
+    const options = useMemo(() => ({
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
             x: {
                 type: 'time',
@@ -342,9 +370,9 @@ export default function SolarEdge() {
         },
         plugins: {
             title: {
-                display: true,               // <-- turn on the title
-                text: 'SolarEdge Power (W)', // <-- your chart title
-                position: 'top',             // 'top' is default, but you can choose 'bottom'
+                display: true,
+                text: 'SolarEdge Power (W)',
+                position: 'top',
                 padding: { top: 10, bottom: 30 },
                 font: { size: 18, weight: 'bold' }
             },
@@ -367,7 +395,7 @@ export default function SolarEdge() {
                 },
             },
         },
-    };
+    }), []);
 
     /**
      * Handles changes to the number of days selector.
@@ -398,9 +426,9 @@ export default function SolarEdge() {
                 console.log("ignoring updates");
                 setIgnoreUpdates((prev) => true);
             }
-            loadRange(selectedDate!, futureDate);
+            loadRange(selectedDate!);
         } else
-            loadRange(new Date(now.getFullYear(), now.getMonth(), now.getDate() - v, 0, 0, 0, 0), now);
+            loadRange(new Date(now.getFullYear(), now.getMonth(), now.getDate() - v, 0, 0, 0, 0));
     };
 
     /**
@@ -445,95 +473,116 @@ export default function SolarEdge() {
                 console.log("ignoring updates");
                 setIgnoreUpdates((prev) => true);
             }
-            loadRange(date, futureDate);
+            loadRange(date);
         }
     };
 
-    if (rangeLoading)
-        return <div><AdminMenu span={4} offset={8} /><Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner></div>;
     if (rangeError)
-        return <div><AdminMenu span={4} offset={8} /><Alert variant="danger">Error: {(rangeError as Error).message}</Alert></div>;
-    {
         return (
-            <div>
-                <AdminMenu span={4} offset={8} />
-                <h1>SolarEdge</h1>
-                <p className="text-center">last Update: {lastSolarEdgeUpdate.toLocaleString()}</p>
-
-                <Row className="border border-black mb-[10px] bg-white p-5">
-                    <Line data={chartData} options={options as any} />
-                </Row>
-                <Row className="border border-black mb-[10px]">
-                    <Col xs={3} className="m-[15px]">Number of Days (1-10) : {numDays} </Col>
-                    <Col xs={7} className="bg-white p-5 pl-10 pb-[30px]">
-                        <Slider
-                            min={1}
-                            max={10}
-                            marks={marks}
-                            value={numDays}
-                            onChange={(v) => handleChangeDays(v as number)}
-                        />
-                    </Col>
-                </Row>
-                <Row className="border border-black mb-[10px]">
-                    <Col xs={2}>
-                        <input type="checkbox" checked={useStartDate} onChange={(e) => handleUseStartDate(e)} /> Use startDate
-                    </Col>
-                    <Col xs={2}>
-                        {useStartDate && <DatePicker
-                            selected={selectedDate}
-                            onChange={handleDateChange}
-                            dateFormat="yyyy/MM/dd"
-                            maxDate={new Date()}
-                            isClearable
-                        />}
-                    </Col>
-                    <Col xs={7}>
-                        <p>Selected range: {range.from.toLocaleString()} to {range.to.toLocaleString()} ( {range.days} days, {range.hrs} hrs) </p>
-                    </Col>
-                </Row>
-                <Row className="border border-black mb-[100px]">
-                    <Col xs={12}>
-                        {info && (
-                            <div>
-                                <h3>Unit Info</h3>
-                                <table className="border-collapse w-[300px] bg-white p-5">
-                                    <tbody>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Signature</td>
-                                            <td>{info.signature}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Model ID</td>
-                                            <td>{info.modelId}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Block Length</td>
-                                            <td>{info.blockLength}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Manufacturer</td>
-                                            <td>{info.manufacturer}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Model</td>
-                                            <td>{info.model}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Version</td>
-                                            <td>{info.version}</td>
-                                        </tr>
-                                        <tr className="border border-black">
-                                            <td className="font-bold">Serial</td>
-                                            <td>{info.serial}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </Col>
-                </Row>
-            </div >
+            <AdminPageLayout title="SolarEdge">
+                <Alert variant="danger">Error: {(rangeError as Error).message}</Alert>
+            </AdminPageLayout>
         );
-    }
+
+    return (
+        <AdminPageLayout title="SolarEdge">
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+
+                {/* Chart card */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Power Output
+                            {rangeLoading && <Spinner animation="border" size="sm" role="status" style={{ marginLeft: '0.75rem', verticalAlign: 'middle' }}><span className="visually-hidden">Loading...</span></Spinner>}
+                        </span>
+                    </div>
+                    <div style={{ padding: '1.25rem', height: '400px' }}>
+                        <Line ref={chartRef} data={chartData} options={options as any} />
+                    </div>
+                </div>
+
+                {/* Controls card */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                    <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                            Time Range
+                        </span>
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                        <Row style={{ marginBottom: '1rem', alignItems: 'center' }}>
+                            <Col xs={3} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: '#001830' }}>
+                                Days (1–10): {numDays}
+                            </Col>
+                            <Col xs={7} style={{ background: 'white', padding: '1rem 1.5rem 2rem' }}>
+                                <Slider
+                                    min={1}
+                                    max={10}
+                                    marks={marks}
+                                    value={numDays}
+                                    onChange={(v) => handleChangeDays(v as number)}
+                                />
+                            </Col>
+                        </Row>
+                        <Row style={{ alignItems: 'center', rowGap: '0.5rem' }}>
+                            <Col xs={12} sm={3} style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.85rem', color: '#001830' }}>
+                                <label>
+                                    <input type="checkbox" checked={useStartDate} onChange={(e) => handleUseStartDate(e)} style={{ marginRight: '0.4rem' }} />
+                                    Use start date
+                                </label>
+                            </Col>
+                            <Col xs={12} sm={3}>
+                                {useStartDate && (
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={handleDateChange}
+                                        dateFormat="yyyy/MM/dd"
+                                        maxDate={new Date()}
+                                        isClearable
+                                    />
+                                )}
+                            </Col>
+                            <Col xs={12} sm={6} style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '0.72rem', color: '#6a9ac4' }}>
+                                {range.from.toLocaleString()} → {range.to.toLocaleString()} ({range.days}d {range.hrs}h)
+                            </Col>
+                        </Row>
+                    </div>
+                </div>
+
+                {/* Unit info card */}
+                {info && (
+                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                        <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                            <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                                Unit Info
+                            </span>
+                        </div>
+                        <div style={{ padding: '1.25rem' }}>
+                            <Row>
+                                {([
+                                    [['Manufacturer', info.manufacturer], ['Model', info.model]],
+                                    [['Version', info.version], ['Serial', info.serial]],
+                                    [['Model ID', String(info.modelId)], ['Signature', info.signature]],
+                                    [['Block Length', String(info.blockLength)], ['Last Update', fmtDate(lastSolarEdgeUpdate)]],
+                                ] as [string, string][][]).map((col, ci) => (
+                                    <Col key={ci} xs={12} sm={3}>
+                                        {col.map(([label, val]) => (
+                                            <div key={label} style={{ marginBottom: '0.75rem' }}>
+                                                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6a9ac4' }}>
+                                                    {label}
+                                                </div>
+                                                <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem', color: '#001830' }}>
+                                                    {val}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </Col>
+                                ))}
+                            </Row>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </AdminPageLayout>
+    );
 }

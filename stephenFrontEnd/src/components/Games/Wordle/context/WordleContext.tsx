@@ -32,6 +32,7 @@ interface WordleContextType {
     loadShortList: () => Promise<void>;
     letterCounts: LetterCounts;
     working: number;
+    removeWord: (word: string) => void;
 }
 
 const WordleContext = React.createContext<WordleContextType | undefined>(undefined);
@@ -57,7 +58,7 @@ interface Props {
  * @returns {JSX.Element} React context provider
  */
 export function WordleProvider({ children }: Props): JSX.Element {
-    const { allWords, allowedSolutions, letterCounts, isWord, checkWord, loadLongList, loadShortList } = useWords();
+    const { allWords, allowedSolutions, letterCounts, isWord, checkWord, loadLongList, loadShortList, removeWord } = useWords();
 
     const { getWordDeviation, topRanked, getNextBestWord } = useWordEvaluator();
 
@@ -157,6 +158,7 @@ export function WordleProvider({ children }: Props): JSX.Element {
         loadShortList,
         letterCounts,
         working,
+        removeWord,
     }
 
     return (

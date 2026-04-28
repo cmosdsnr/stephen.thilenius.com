@@ -1,0 +1,320 @@
+/* ═══════════════════════════════════════════════════════════
+   Admin Menu + Dashboard  — Control Station aesthetic
+   ─────────────────────────────────────────────────────────── */
+
+/* ── Nav Tile Grid ── */
+.th-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);  /* XS: 3 rows of 3 */
+  gap: 10px;
+  padding: 4px 10px 8px;
+}
+
+@media (min-width: 576px) {
+  .th-tile-grid {
+    grid-template-columns: repeat(5, 1fr);  /* S: 2 rows (5+4) */
+  }
+}
+
+@media (min-width: 768px) {
+  .th-tile-grid {
+    grid-template-columns: repeat(9, 1fr);  /* MD+: 1 row */
+  }
+}
+
+/* Individual tile */
+.th-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  background: #0c1520;
+  border: 1px solid #1c3050;
+  border-radius: 10px;
+  text-decoration: none !important;
+  color: #3e6899;
+  gap: 9px;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease,
+    background 0.18s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Amber top-edge reveal on hover */
+.th-tile::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #f59e0b;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+
+.th-tile:hover {
+  background: #0f1d30;
+  border-color: rgba(245, 158, 11, 0.55);
+  color: #f59e0b;
+  transform: translateY(-4px);
+  box-shadow:
+    0 10px 28px rgba(245, 158, 11, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  text-decoration: none !important;
+}
+
+.th-tile:hover::after {
+  transform: scaleX(1);
+}
+
+.th-tile svg {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+}
+
+.th-tile-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #4a6a8a;
+  transition: color 0.18s ease;
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 6px;
+}
+
+.th-tile:hover .th-tile-label {
+  color: #f59e0b;
+}
+
+/* ── Sidebar (vertical icon column) ── */
+.th-tile-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 8px 6px;
+}
+
+.th-tile-sidebar .th-tile {
+    padding: 25px 6px;
+    border-radius: 8px;
+}
+
+.th-tile-sidebar .th-tile svg {
+    width: 32px;
+    height: 32px;
+}
+
+.th-sidebar-divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 2px 6px;
+}
+
+/* ── Dashboard Layout ── */
+.th-dashboard {
+  padding: 20px 16px 32px;
+}
+
+/* Profile strip */
+.th-profile-panel {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: #0c1520;
+  border: 1px solid #1c3050;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  max-width: 860px;
+}
+
+/* Avatar wrapper — override Avatar.css's light styles */
+.th-avatar-wrap .document-uploader {
+  background: #08101a !important;
+  border: 2px dashed #1c3050 !important;
+  border-radius: 50% !important;
+  width: 86px !important;
+  height: 86px !important;
+  padding: 0 !important;
+  min-height: unset !important;
+}
+
+.th-avatar-wrap .browse-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.th-avatar-wrap .browse-btn img {
+  width: 86px !important;
+  height: 86px !important;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block !important;
+  margin: 0 !important;
+}
+
+.th-avatar-wrap .document-uploader:hover {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+/* Profile info */
+.th-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.th-profile-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #dde6f0;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+
+.th-profile-email {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: #4a6a8a;
+  margin-bottom: 10px;
+  letter-spacing: 0.04em;
+}
+
+.th-profile-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.th-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f59e0b;
+}
+
+.th-settings-row {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #4a6a8a;
+  line-height: 1.8;
+}
+
+.th-settings-key {
+  color: #3e6899;
+  margin-right: 6px;
+}
+
+/* Profile action buttons */
+.th-profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.th-btn-primary {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 15px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 5px;
+  color: #f59e0b;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  cursor: pointer;
+  line-height: 1.6;
+}
+
+.th-btn-primary:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  text-decoration: none;
+}
+
+.th-btn-ghost {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 15px;
+  background: transparent;
+  border: 1px solid #1c3050;
+  border-radius: 5px;
+  color: #3e6899;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  line-height: 1.6;
+}
+
+.th-btn-ghost:hover {
+  border-color: #3e6899;
+  color: #7aa0c4;
+}
+
+/* Section label above tile grid */
+.th-section-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #1c3050;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #131f2e;
+  max-width: 860px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .th-profile-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    border-left: 1px solid #1c3050;
+    border-top: 4px solid #f59e0b;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .th-profile-name {
+    font-size: 22px;
+  }
+
+}

@@ -10,7 +10,7 @@ interface Props {
 
 export const MyFontAwesomeIcon = React.memo(function MyFontAwesomeIcon({ icon, inverse }: Props) {
     const width = useWindow();
-    const showIcons = width > 950 || width < 768;
+    const showIcons = width >= 1200 || width < 768;
     return (
         <>{showIcons && <FontAwesomeIcon icon={icon} inverse={inverse} />}</>
     )

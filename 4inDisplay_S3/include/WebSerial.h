@@ -11,6 +11,23 @@
  */
 
 /**
+ * @brief Loads persisted events from LittleFS into the in-memory history.
+ * Call once after LittleFS is mounted.
+ */
+void loadEventLog();
+
+/**
+ * @brief Loads persisted serial output from LittleFS into the in-memory history.
+ * Call once after LittleFS is mounted.
+ */
+void loadSerialLog();
+
+/**
+ * @brief Prints all in-memory events to the serial console.
+ */
+void printEventLog();
+
+/**
  * @brief Sends an event message to connected clients.
  */
 void sendEvent(const char *subject, const char *message);
@@ -102,5 +119,17 @@ void writeAllData(AsyncWebSocketClient *client);
  * @brief Sends GPIO pin values to client.
  */
 void sendPinValues(AsyncWebSocketClient *client);
+
+/**
+ * @brief Returns the last ≤50 serial output lines as a JSON string.
+ * @return JSON string `{"code":"serialLog","lines":[...]}`
+ */
+String getSerialLogJson();
+
+/**
+ * @brief Returns the last ≤50 events as a JSON string.
+ * @return JSON string `{"code":"eventLog","events":[...]}`
+ */
+String getEventLogJson();
 
 #endif

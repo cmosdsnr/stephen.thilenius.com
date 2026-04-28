@@ -146,7 +146,6 @@ public:
     void scanNetworks();
     /** @brief Processes scan results into the network list. */
     bool processScanResults();
-    bool waitForever = false;
     bool wifiConnected = false;
     /** @brief Creates the networks file if missing. */
     void initiateNetworkFile();
@@ -154,11 +153,15 @@ public:
     void initialize();
     /** @brief Writes the current network list to storage. */
     void writeNetworkFile();
+    /** @brief Sends a periodic heartbeat to the backend with uptime and heap info. */
+    void sendHeartbeat();
 
     /** @brief Updates state after successful connection. */
     void handleConnectionSuccess();
     /** @brief Updates state after connection failure. */
     void handleConnectionFailure();
+    /** @brief Manually enter AP mode (disconnect and start captive portal). */
+    void enterApMode();
 
     String getSelectedSSID() const
     {
@@ -203,8 +206,11 @@ public:
 
 private:
     bool networksChanged = false, scanning = false, connecting = false, _apMode = false;
+    bool eepromConnectAttempt = false;
     unsigned long connectStartTime = 0;
     unsigned long scanFailTime = 0;
+    unsigned long lastRescanTime = 0;
+    unsigned long lastConnectAttemptTime = 0;
     uint8_t count = 0;
     int8_t selectedIndex = -1;
     networkStruct *selectedNetwork = nullptr;

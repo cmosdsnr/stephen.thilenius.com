@@ -1,50 +1,124 @@
 import React from 'react'
-import solarEdge from "../../images/solarEdge.jpeg"
-import meter from "../../images/meter.jpeg"
-import esp32 from "../../images/esp32.jpeg"
-import loan from "../../images/loan.jpeg"
-import sprinkler from "../../images/sprinklers.jpeg"
-import davis from "../../images/davis.jpg"
-import ultimeter from "../../images/ultimeter.jpg"
-import dashboard from "../../images/dashboard.png"
-import futures from "../../images/futures.jpg"
-import download from "../../images/download.png"
 import { useData } from '../../contexts/DataContext'
+import {
+    IconDashboard, IconFileShare, IconSolar, IconPowerMeter,
+    IconESP32, IconSprinkler, IconDavis, IconUltimeter, IconLoan, IconFutures
+} from './AdminIcons'
+import './AdminMenu.css'
 
 interface AdminMenuProps {
-    span: number;
-    offset: number;
+    span?: number;
+    offset?: number;
+    sidebar?: boolean;
 }
 
-export const AdminMenu = ({ span, offset }: AdminMenuProps) => {
+interface TileEntry {
+    href: string;
+    label: string;
+    icon: React.ReactNode;
+    show: boolean;
+    dividerBefore?: boolean;
+}
+
+export const AdminMenu = ({ span, offset, sidebar }: AdminMenuProps) => {
     const path = window.location.pathname;
     const { pb } = useData();
     const role = pb.authStore.model?.role
     const isAdmin = role === 'Administrator'
     const isBorrower = role === 'Borrower' || role === 'Administrator'
 
+    const tiles: TileEntry[] = [
+        {
+            href: '/dashboard',
+            label: 'Dashboard',
+            icon: <IconDashboard size={46} />,
+            show: path !== '/dashboard',
+        },
+        {
+            href: '/user/fileShare',
+            label: 'File Share',
+            icon: <IconFileShare size={46} />,
+            show: path !== '/user/fileShare',
+        },
+        {
+            href: '/admin/solar',
+            label: 'Solar Edge',
+            dividerBefore: true,
+            icon: <IconSolar size={46} />,
+            show: path !== '/admin/solar' && isAdmin,
+        },
+        {
+            href: '/admin/powermeter',
+            label: 'Power Meter',
+            icon: <IconPowerMeter size={46} />,
+            show: path !== '/admin/powermeter' && isAdmin,
+        },
+        {
+            href: '/admin/espTable',
+            label: 'ESP32',
+            icon: <IconESP32 size={46} />,
+            show: path !== '/admin/espTable' && isAdmin,
+        },
+        {
+            href: '/admin/sprinkler',
+            label: 'Sprinkler',
+            icon: <IconSprinkler size={46} />,
+            show: path !== '/admin/sprinkler' && isAdmin,
+        },
+        {
+            href: '/admin/davis',
+            label: 'Davis',
+            icon: <IconDavis size={46} />,
+            show: path !== '/admin/davis' && isAdmin,
+        },
+        {
+            href: '/admin/ultimeter',
+            label: 'Ultimeter',
+            icon: <IconUltimeter size={46} />,
+            show: path !== '/admin/ultimeter' && isAdmin,
+        },
+        {
+            href: '/admin/sophiesLoan',
+            label: "Sophie's Loan",
+            icon: <IconLoan size={46} />,
+            show: path !== '/admin/sophiesLoan' && isBorrower,
+        },
+        {
+            href: '/admin/futures',
+            label: 'Futures',
+            icon: <IconFutures size={46} />,
+            show: path !== '/admin/futures' && isAdmin,
+        },
+    ]
+
+    const visible = tiles.filter(t => t.show)
+    if (visible.length === 0) return null
+
+    if (sidebar) {
+        return (
+            <div className="th-tile-sidebar">
+                <div className="th-section-label" style={{ textAlign: 'center', padding: '8px 4px 4px' }}>Navigation</div>
+                {visible.map(tile => (
+                    <a key={tile.href} href={tile.href} className="th-tile" title={tile.label}>
+                        {tile.icon}
+                        <span className="th-tile-label">{tile.label}</span>
+                    </a>
+                ))}
+            </div>
+        )
+    }
+
     return (
-        <div className="flex flex-wrap">
-            {path !== '/dashboard' &&
-                <a href="/dashboard"><img src={dashboard} alt="Dashboard" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/user/fileShare' &&
-                <a href="/user/fileShare"><img src={download} alt="File Share" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/solar' && isAdmin &&
-                <a href="/admin/solar"><img src={solarEdge} alt="Solar Edge" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/powermeter' && isAdmin &&
-                <a href="/admin/powermeter"><img src={meter} alt="Power Meter" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/espTable' && isAdmin &&
-                <a href="/admin/espTable"><img src={esp32} alt="ESP32" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/sprinkler' && isAdmin &&
-                <a href="/admin/sprinkler"><img src={sprinkler} alt="Sprinkler" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/davis' && isAdmin &&
-                <a href="/admin/davis"><img src={davis} alt="Davis" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/ultimeter' && isAdmin &&
-                <a href="/admin/ultimeter"><img src={ultimeter} alt="Ultimeter" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/sophiesLoan' && isBorrower &&
-                <a href="/admin/sophiesLoan"><img src={loan} alt="Sophie's Loan" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-            {path !== '/admin/futures' && isAdmin &&
-                <a href="/admin/futures"><img src={futures} alt="Futures" loading="lazy" className="w-[120px] h-[120px] object-contain p-[5px]" /></a>}
-        </div>
+        <>
+            <div className="th-section-label">Navigation</div>
+            <div className="th-tile-grid">
+                {visible.map(tile => (
+                    <a key={tile.href} href={tile.href} className="th-tile">
+                        {tile.icon}
+                        <span className="th-tile-label">{tile.label}</span>
+                    </a>
+                ))}
+            </div>
+        </>
     )
 }

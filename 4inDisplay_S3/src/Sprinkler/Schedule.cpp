@@ -137,7 +137,7 @@ void stopManual()
         sendOnOff(ch, false);
         char buf[32];
         sprintf(buf, "Manual deactivate ch%d", manualChannel);
-        Serial0.println(buf);
+        printf("%s\n", buf);
         sendEvent("Manual Deactivate", buf);
         manualDuration = 0;
         manualStart = 0;
@@ -164,7 +164,7 @@ void checkSchedule()
             digitalWrite(sprinklerPins[manualChannel], HIGH);
             sendOnOff((uint8_t)manualChannel, true);
             sprintf(buf, "Manual activate ch%d for %d min", manualChannel, manualDuration);
-            Serial0.println(buf);
+            printf("%s\n", buf);
             sendEvent("Manual Activate", buf);
         }
         else if (pos.minutesIntoDay >= manualStart + manualDuration || manualDuration == 0)
@@ -196,7 +196,7 @@ void checkSchedule()
             digitalWrite(sprinklerPins[runningChannel], LOW);
             sendOnOff((uint8_t)runningChannel, false);
             sprintf(buf, "Deactivate ch%d", runningChannel);
-            Serial0.println(buf);
+            printf("%s\n", buf);
             sendEvent("Deactivate", buf);
             runningChannel = -1;
         }
@@ -216,7 +216,7 @@ void checkSchedule()
             sendOnOff(e.channel, true);
             runningChannel = e.channel;
             sprintf(buf, "Activate ch%d", e.channel);
-            Serial0.println(buf);
+            printf("%s\n", buf);
             sendEvent("Activate", buf);
             break;
         }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import './sprinkler.css'
 import { SprinklerInterface } from './SprinklerInterface'
 import { itemNames, dataPoint } from './constants';
-import { AdminMenu } from '../AdminMenu';
+import AdminPageLayout from '../AdminPageLayout';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { sprinklerChannelColors, sprinklerCycle, sprinklerSelected, errorBanner, warningBanner, textMuted, borderMuted } from '../../../tokens';
@@ -309,8 +309,7 @@ export default function Sprinkler() {
     }
 
     return (
-        <>
-            <AdminMenu span={4} offset={8} />
+        <AdminPageLayout title="Sprinkler">
             {rulesError && (
                 <div style={{ background: errorBanner.bg, color: errorBanner.text, padding: '10px', margin: '10px', borderRadius: '4px', fontWeight: 'bold' }}>
                     ESP did not acknowledge rules — check connection.
@@ -319,16 +318,6 @@ export default function Sprinkler() {
             {sprinklerDataLoaded ?
                 <div className="pb-[100px]">
                     <div className="container-fluid">
-                        <div className="row">
-                            <div className="col text-center">
-                                <h3>Sprinkler System</h3>
-                            </div>
-                        </div>
-                        <div className="row mb-2">
-                            {/* <div className="col text-center">
-                                <h4>{displayTime}</h4>
-                            </div> */}
-                        </div>
                         <div className="row g-3 align-items-start">
                             <div className="col-6">
                                 <div className="card shadow-sm">
@@ -564,7 +553,7 @@ export default function Sprinkler() {
                 </div >
                 : <h1>Data Loading... (Sprinkler ESP May Not Be Connected)</h1>
             }
-        </>
+        </AdminPageLayout>
     )
 }
 

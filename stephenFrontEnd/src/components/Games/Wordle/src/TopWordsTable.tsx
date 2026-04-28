@@ -10,9 +10,17 @@ type Props = {
     topRanked: RankedGuess[];
     current: CurrentGameState;
     replaceWord: (word: string) => void;
+    removeWord: (word: string) => void;
 };
 
-export default function TopWordsTable({ topRanked, current, replaceWord }: Props) {
+export default function TopWordsTable({ topRanked, current, replaceWord, removeWord }: Props) {
+    const makeWordInvalid = (word: string) => {
+        if (!window.confirm(`Are you sure you want to mark "${word}" as invalid? This will remove it from future suggestions.`)) return;
+        const next = topRanked.filter(n => n.word !== word)[0];
+        if (next) replaceWord(next.word);
+        removeWord(word);
+    };
+
     return (
         <Row>
             <Col xs={12} style={{ marginBottom: "20px" }}>
@@ -35,6 +43,7 @@ export default function TopWordsTable({ topRanked, current, replaceWord }: Props
                                                 key={j + section * 10}
                                                 style={{ cursor: "pointer" }}
                                                 onClick={() => replaceWord(n.word)}
+                                                onContextMenu={(e) => { e.preventDefault(); makeWordInvalid(n.word); }}
                                             >
                                                 <td>{n.word}</td>
                                                 <td>{(Math.round(n.std * 10) / 10).toFixed(1)}</td>

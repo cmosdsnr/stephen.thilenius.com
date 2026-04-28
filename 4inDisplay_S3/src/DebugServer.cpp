@@ -358,6 +358,16 @@ void SetUpServer()
     server.on("/variableNames", HTTP_GET, variableNames);
     server.on("/variableValues", HTTP_GET, variableValues);
     server.on("/eventHeader", HTTP_GET, eventHeader);
+    server.on("/serialLog", HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+        if (!request->authenticate(wwwUsername, wwwPassword))
+            return request->requestAuthentication();
+        request->send(200, "application/json", getSerialLogJson()); });
+    server.on("/eventLog", HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+        if (!request->authenticate(wwwUsername, wwwPassword))
+            return request->requestAuthentication();
+        request->send(200, "application/json", getEventLogJson()); });
 #ifdef GLIDERPORT
     server.on("/pingMe", HTTP_GET, pingMe);
     server.on("/addData", HTTP_GET, addData);

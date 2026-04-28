@@ -1,11 +1,12 @@
-import { scanRange } from "./evaluate";
+import { scanRange } from './evaluate';
 
-self.addEventListener(
-  "message",
-  function (e) {
-    const results = scanRange(e.data[0], e.data[1], e.data[2]);
-    self.postMessage({ type: "complete", results });
-    self.close();
-  },
-  false
-);
+// Message in:  [sieve: Uint32Array, sieveLen: number, from: number, to: number]
+// Message out: { type: 'complete', results: { data: Uint32Array, duration: number } }
+// The Uint32Array buffer is transferred (zero-copy) back to the main thread.
+
+self.addEventListener('message', (e) => {
+  const [sieve, sieveLen, from, to]: [Uint32Array, number, number, number] = e.data;
+  const results = scanRange(sieve, sieveLen, from, to);
+  self.postMessage({ type: 'complete', results }, [results.data.buffer]);
+  self.close();
+});

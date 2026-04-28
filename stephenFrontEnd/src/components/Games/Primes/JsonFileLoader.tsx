@@ -27,13 +27,21 @@ export const JsonFileLoader: React.FC<JsonFileLoaderProps> = ({ onLoad }) => {
         reader.readAsText(file);
     };
 
-    if (loaded)
+    if (!loaded)
         return <input type="file" accept=".json" onChange={handleFileUpload} />
     else
         return (
             <>
-                <p>File loaded: {fileName}</p>
-                <button onClick={() => setLoaded(false)}>Load another file</button>
+                <span style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: '0.78rem', color: '#166534' }}>
+                    ✓ {fileName}
+                </span>
+                {' '}
+                <button
+                    onClick={() => setLoaded(false)}
+                    style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', background: 'transparent', border: '1px solid #6a9ac4', borderRadius: 3, padding: '2px 8px', cursor: 'pointer', color: '#6a9ac4' }}
+                >
+                    Load another
+                </button>
             </>
         )
 };

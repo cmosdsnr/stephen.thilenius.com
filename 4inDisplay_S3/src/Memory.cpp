@@ -8,6 +8,7 @@
 #include <LittleFS.h>
 #include "Memory.h"
 #include "devkit_pins.h"
+#include "Report.h"
 
 SPIClass sdSPI(HSPI);
 
@@ -29,11 +30,11 @@ uint64_t sdCachedNumSectors = 0;
  */
 void setupSD()
 {
-    printf("\n");
+    Report.printf("\n");
     sdSPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, SD_CS);
     if (!SD.begin(SD_CS, sdSPI, 4000000))
     {
-        printf("Card Mount Failed\n");
+        Report.printf("Card Mount Failed\n");
         sdCardMounted = false;
         return;
     }
@@ -41,7 +42,7 @@ void setupSD()
     sdCardType = SD.cardType();
     if (sdCardType == CARD_NONE)
     {
-        printf("No SD card attached\n");
+        Report.printf("No SD card attached\n");
         sdCardMounted = false;
         return;
     }
@@ -53,25 +54,25 @@ void setupSD()
     sdCachedSectorSize = SD.sectorSize();
     sdCachedNumSectors = SD.numSectors();
 
-    printf("SD Card Type: ");
+    Report.printf("SD Card Type: ");
     if (sdCardType == CARD_MMC)
     {
-        printf("MMC\n");
+        Report.printf("MMC\n");
     }
     else if (sdCardType == CARD_SD)
     {
-        printf("SDSC\n");
+        Report.printf("SDSC\n");
     }
     else if (sdCardType == CARD_SDHC)
     {
-        printf("SDHC\n");
+        Report.printf("SDHC\n");
     }
     else
     {
-        printf("UNKNOWN\n");
+        Report.printf("UNKNOWN\n");
     }
 
-    printf("SD Card Size: %lluMB\n", sdCardSizeMB);
+    Report.printf("SD Card Size: %lluMB\n", sdCardSizeMB);
 }
 
 /**
@@ -102,21 +103,20 @@ void setupLittleFS()
     //! Initialize LittleFS
     if (!LittleFS.begin(true))
     {
-        printf("\nFailed to mount LittleFS\n");
+        Report.printf("\nFailed to mount LittleFS\n");
         return;
     }
     //! Check available flash memory
-    printf("\nFlash size: ");
-    printf("%s\n", humanReadableSize(ESP.getFlashChipSize()).c_str());
+    Report.printf("\nFlash size: %s\n", humanReadableSize(ESP.getFlashChipSize()).c_str());
 
     //! Get total and used bytes
     size_t totalBytes = LittleFS.totalBytes();
     size_t usedBytes = LittleFS.usedBytes();
 
     //! Print total and free space
-    printf("LittleFS space: %s\n", humanReadableSize(totalBytes).c_str());
-    printf("LittleFS Used space: %s\n", humanReadableSize(usedBytes).c_str());
-    printf("LittleFS Free space: %s\n\n", humanReadableSize(totalBytes - usedBytes).c_str());
+    Report.printf("LittleFS space: %s\n", humanReadableSize(totalBytes).c_str());
+    Report.printf("LittleFS Used space: %s\n", humanReadableSize(usedBytes).c_str());
+    Report.printf("LittleFS Free space: %s\n\n", humanReadableSize(totalBytes - usedBytes).c_str());
 }
 
 /**
@@ -129,14 +129,14 @@ void setupPSRAM()
     //! Initialize PSRAM
     if (!psramInit())
     {
-        printf("PSRAM initialization failed.\n");
+        Report.printf("PSRAM initialization failed.\n");
         return;
     }
 
     //! Check if PSRAM is found
     if (psramFound())
     {
-        printf("\nPSRAM size: %s\n", humanReadableSize(ESP.getPsramSize()).c_str());
+        Report.printf("\nPSRAM size: %s\n", humanReadableSize(ESP.getPsramSize()).c_str());
         uint8_t *psramBuffer = (uint8_t *)ps_malloc(15 * 512 * 1024);
         if (psramBuffer != NULL)
         {
@@ -144,12 +144,12 @@ void setupPSRAM()
         }
         else
         {
-            printf("Failed to allocate memory in PSRAM\n");
+            Report.printf("Failed to allocate memory in PSRAM\n");
         }
     }
     else
     {
-        printf("PSRAM not found.\n");
+        Report.printf("PSRAM not found.\n");
     }
-    printf("\n");
+    Report.printf("\n");
 }

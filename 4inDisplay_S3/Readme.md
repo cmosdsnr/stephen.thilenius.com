@@ -8,7 +8,7 @@ Multi-purpose ESP32-S3 firmware with a 4-inch ILI9488 TFT touchscreen display. A
 
 Set exactly one of the following flags in `platformio.ini` under `build_flags`. All others must be commented out.
 
-### `-D GLIDERPORT`
+### -D GLIDERPORT
 Weather station display deployed at the gliderport site. Communicates with `gp_pi3_server` (Raspberry Pi 3 at `192.168.88.11:8080`).
 
 - **Wind** — reed-switch anemometer on two GPIO inputs (speed + direction). A 2 ms hardware timer ISR applies hysteresis filtering and records edge timings. Each full anemometer rotation yields speed (`1337.6 / period` → mph) and direction (`143 − (360 × dirLow / speedHigh)` → degrees).
@@ -18,7 +18,7 @@ Weather station display deployed at the gliderport site. Communicates with `gp_p
 - **HTTP API** — `GET /data` returns JSON: `{ bmp: {t, p, c}, dht: {t, h, c}, wind: {s, a, c} }`.
 - **Display tabs** — Gliderport (live speed/direction readout), Rose (wind rose), Status.
 
-### `-D DESK`
+### -D DESK
 Desktop dashboard unit used at a desk/office location.
 
 - **Wind** — fetches wind data from a remote weather station (Davis and Ultimeter protocol support). Displays live readings and history on the Wind tab.
@@ -27,14 +27,14 @@ Desktop dashboard unit used at a desk/office location.
 - **Devices** — polls the ESP device registry (Cloudflare Worker) and lists all active ESP32/ESP01/other devices with IP and last-seen time. Refreshes every 60 s.
 - **Display tabs** — Wind, Power, Shot, Devices.
 
-### `-D COFFEE`
+### -D COFFEE
 Coffee machine controller.
 
 - Controls three relays: **lights** (auto-triggered by PIR motion sensor, 3-minute timeout), **water fill** (timed), **lock** (momentary + hold relay pair).
 - Motion sensor input auto-activates the lights relay.
 - **Display tab** — Coffee (three icon buttons: lights, fill, lock).
 
-### `-D GARAGE`
+### -D GARAGE
 Garage door controller.
 
 - **Door relay** — simulates a button press (relay HIGH for 1 s, debounced to 1.5 s). Controlled from the touchscreen.
@@ -42,7 +42,7 @@ Garage door controller.
 - **Light relay** and **power relay** — independently switched from the display.
 - **Display tab** — Garage (door, lights, power buttons with status bar).
 
-### `-D SPRINKLER`
+### -D SPRINKLER
 Garden sprinkler controller.
 
 - Drives up to 5 sprinkler channels (CH1–CH5) plus a pump relay via GPIO.
@@ -50,7 +50,7 @@ Garden sprinkler controller.
 - Schedule logic: 14-day cycle with configurable per-channel day/duration/start entries. Runs entirely on-device — no cloud dependency.
 - **Display tabs** — Sprinkler (zone controls), Status.
 
-### `-D POWERMETER`
+### -D POWERMETER
 Standalone power meter display (early/work-in-progress build).
 
 - Reads power consumption data and displays it on a dedicated tab.

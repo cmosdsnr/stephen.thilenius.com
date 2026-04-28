@@ -28,6 +28,8 @@
 #define MAIN_BTN_Y      (TAB_H + 8)
 #define MAIN_BTN_H      32
 #define MAIN_BTN_W      105
+#define AP_BTN_X        155   //!< AP Mode button (between status and saved)
+#define AP_BTN_W        90
 #define SAVED_BTN_X     255
 #define SCAN_BTN_X      370
 #define STATUS_BTN_X    10    //!< Status badge (left of Saved/Scan buttons)
@@ -112,6 +114,12 @@ TabNetwork::TabNetwork(TFT_eSPI *tft, Networks *wifiNetworks) : Tab()
 void TabNetwork::draw()
 {
     changed = false;
+    //! Sync cached state so loop() doesn't immediately re-trigger a draw
+    ip          = WiFi.localIP();
+    ssid        = _wifiNetworks->getSelectedSSID();
+    rssi        = _wifiNetworks->getSelectedRSSI();
+    _connecting = _wifiNetworks->isConnecting();
+    _apMode     = _wifiNetworks->isApMode();
     _tft->fillRect(0, TAB_H - CORNER_RADIUS, _tft->width(), _tft->height() - TAB_H + CORNER_RADIUS, bgColor);
 
     _tft->setFreeFont(&FreeSans9pt7b);
@@ -144,7 +152,11 @@ void TabNetwork::draw()
     _tft->setTextColor(TFT_WHITE);
     _tft->drawString(statusLabel, STATUS_BTN_X + STATUS_BTN_W / 2, MAIN_BTN_Y + MAIN_BTN_H / 2);
 
-    // ── Saved / Scan buttons ─────────────────────────────────────────────────
+    // ── AP Mode / Saved / Scan buttons ───────────────────────────────────────
+    _tft->fillRoundRect(AP_BTN_X, MAIN_BTN_Y, AP_BTN_W, MAIN_BTN_H, 6, _wifiNetworks->isApMode() ? TFT_RED : TFT_DARKGREY);
+    _tft->setTextColor(TFT_WHITE);
+    _tft->drawString("AP Mode", AP_BTN_X + AP_BTN_W / 2, MAIN_BTN_Y + MAIN_BTN_H / 2);
+
     _tft->fillRoundRect(SAVED_BTN_X, MAIN_BTN_Y, MAIN_BTN_W, MAIN_BTN_H, 6, TFT_DARKGREY);
     _tft->setTextColor(TFT_WHITE);
     _tft->drawString("Saved", SAVED_BTN_X + MAIN_BTN_W / 2, MAIN_BTN_Y + MAIN_BTN_H / 2);
@@ -594,8 +606,9 @@ void TabNetwork::handleKeyboard(uint16_t x, uint16_t y)
 /**
  * @brief Save password and attempt WiFi connection to the keyboard SSID.
  *
- * Calls addPassword() which persists to flash, marks the network visible,
- * and triggers auto-connect via Networks::loop(). Returns to main view.
+ * Calls addPassword() which persists to flash; if the network is currently
+ * visible in scan results, wifiConnect() is called immediately. Returns to
+ * main view.
  */
 void TabNetwork::attemptConnect()
 {
@@ -773,14 +786,20 @@ void TabNetwork::handle(uint16_t x, uint16_t y, uint32_t lastClick)
                         {
                             _wifiNetworks->removeNetwork(i);
                             Report.printf("forgot saved[%d]\r\n", i);
+                            delete[] saved;
+                            drawSavedList();
+                            return;
                         }
                         else
                         {
                             _wifiNetworks->selectNetwork(i);
                             Report.printf("selected saved[%d]\r\n", i);
+                            delete[] saved;
+                            _showSavedList = false;
+                            _deleteMode    = false;
+                            draw();
+                            return;
                         }
-                        drawSavedList();
-                        break;
                     }
                     v++;
                 }
@@ -817,7 +836,13 @@ void TabNetwork::handle(uint16_t x, uint16_t y, uint32_t lastClick)
     }
 
     // ── Main view ─────────────────────────────────────────────────────────────
-    if (x >= SAVED_BTN_X && x <= SAVED_BTN_X + MAIN_BTN_W &&
+    if (x >= AP_BTN_X && x <= AP_BTN_X + AP_BTN_W &&
+        y >= MAIN_BTN_Y && y <= MAIN_BTN_Y + MAIN_BTN_H)
+    {
+        quickBeep();
+        _wifiNetworks->enterApMode();
+    }
+    else if (x >= SAVED_BTN_X && x <= SAVED_BTN_X + MAIN_BTN_W &&
         y >= MAIN_BTN_Y  && y <= MAIN_BTN_Y + MAIN_BTN_H)
     {
         quickBeep();

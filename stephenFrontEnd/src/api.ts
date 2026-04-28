@@ -22,22 +22,33 @@ const url = (path: string) => new URL(path, serverURL).toString()
 export const API = {
 
     // -------------------------------------------------------------------------
+    // Version
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the backend version string.
+     *
+     * `GET /api/version`
+     */
+    version: () => url('/api/version'),
+
+    // -------------------------------------------------------------------------
     // ESP Devices
     // -------------------------------------------------------------------------
 
     /**
      * Returns the list of registered ESP32 devices.
      *
-     * `GET /api/ESPlist`
+     * `GET /api/esp/ESPlist`
      */
-    ESPlist: () => url('/api/ESPlist'),
+    ESPlist: () => url('/api/esp/ESPlist'),
 
     /**
      * Triggers a refresh/update of the ESP32 device registry.
      *
-     * `GET /api/ESPupdate`
+     * `GET /api/esp/ESPupdate`
      */
-    ESPupdate: () => url('/api/ESPupdate'),
+    ESPupdate: () => url('/api/esp/ESPupdate'),
 
     // -------------------------------------------------------------------------
     // Power Meter
@@ -85,13 +96,15 @@ export const API = {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns SolarEdge inverter production data for the given date/time range.
+     * Returns SolarEdge inverter production data from `from` to the current end of the database.
+     * The backend decimates the result to `points` entries using sliding window averaging.
+     * Response includes `stepMs` — the millisecond duration each returned point represents.
      *
-     * `GET /api/solarEdge/Range?from=<ISO>&to=<ISO>`
-     * @param from - Start of the range (inclusive)
-     * @param to   - End of the range (inclusive)
+     * `GET /api/solarEdge/Range?from=<ISO>&points=<N>`
+     * @param from   - Start of the range (inclusive, ISO 8601)
+     * @param points - Target number of output points; typically the chart pixel width
      */
-    solarEdgeRange: (from: Date, to: Date) => url(`/api/solarEdge/Range?from=${from.toISOString()}&to=${to.toISOString()}`),
+    solarEdgeRange: (from: Date, points: number) => url(`/api/solarEdge/Range?from=${from.toISOString()}&points=${points}`),
 
     /**
      * Returns unit/device information for the SolarEdge inverter.
@@ -190,10 +203,10 @@ export const API = {
     /**
      * Deletes the specified file from the file share.
      *
-     * `GET /api/delete?file=<file>`
+     * `GET /api/delete?name=<file>`
      * @param file - File path/name (URL-encoded)
      */
-    fileDelete: (file: string) => url(`/api/delete?file=${encodeURIComponent(file)}`),
+    fileDelete: (file: string) => url(`/api/delete?name=${encodeURIComponent(file)}`),
 
     /**
      * Upload endpoint for one or more files to the file share.
