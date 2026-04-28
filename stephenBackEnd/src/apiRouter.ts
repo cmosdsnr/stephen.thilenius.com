@@ -1,5 +1,7 @@
 // apiRouter.ts
 import express, { Request, Response, Router } from "express";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 
 import { sprinklerRoutes } from "sprinkler";
 import { powerMeterRoutes } from "powerMeter";
@@ -17,6 +19,9 @@ import { fileShareRoutes } from "fileShare";
  *
  * @returns A configured Express Router with all API routes mounted.
  */
+const _versionFile = fileURLToPath(new URL('./version.json', import.meta.url));
+const _backendVersion: string = JSON.parse(readFileSync(_versionFile, 'utf-8')).version;
+
 export function createApiRouter(): Router {
   const router = express.Router();
 
@@ -39,6 +44,10 @@ export function createApiRouter(): Router {
    */
   router.get("/test", (_req: Request, res: Response) => {
     res.send("API says Hello, TypeScript & Express!");
+  });
+
+  router.get("/version", (_req: Request, res: Response) => {
+    res.json({ version: _backendVersion });
   });
 
   return router;
