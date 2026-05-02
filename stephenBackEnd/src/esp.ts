@@ -4,7 +4,7 @@ import express from "express";
 import net from "net";
 import http, { IncomingMessage } from "http";
 import { broadcast } from "socket";
-import Bonjour from "bonjour-service";
+import { Bonjour } from "bonjour-service";
 
 /**
  * ESP32 device discovery and management module.
