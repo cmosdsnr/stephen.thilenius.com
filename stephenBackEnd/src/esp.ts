@@ -82,7 +82,11 @@ function registerDevice(name: string, ip: string, source: string): void {
     }
   }
 
-  ESPlist[name] = { date: new Date(), ip, source };
+  // mDNS takes priority — once a device is confirmed via mDNS, keep that source
+  const resolvedSource = ESPlist[name]?.source === "mDNS" && source !== "mDNS"
+    ? "mDNS"
+    : source;
+  ESPlist[name] = { date: new Date(), ip, source: resolvedSource };
   broadcast("ESPlist", { ...ESPlist[name], name });
 }
 
