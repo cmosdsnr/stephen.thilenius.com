@@ -4,7 +4,6 @@ import express from "express";
 import net from "net";
 import http, { IncomingMessage } from "http";
 import { broadcast } from "socket";
-import { Bonjour } from "bonjour-service";
 
 /**
  * ESP32 device discovery and management module.
@@ -203,24 +202,6 @@ function checkPort(i: number): Promise<number> {
 await ESPUpdate();
 setInterval(() => ESPUpdate(), 20 * 60 * 1000);
 
-// mDNS continuous discovery — picks up devices within seconds of them coming online
-function startBonjourDiscovery() {
-    const bonjour = new Bonjour();
-    bonjour.find({ type: "http" }).on("up", (service) => {
-        const name = service.name;
-        const ip = service.addresses?.find((a: string) => a.includes(".")); // IPv4 only
-        if (!ip) return;
-        if (!name.toUpperCase().includes("ESP")) {
-            mDNSOtherList[name] = ip;
-            return;
-        }
-        console.log(`mDNS discovered: ${name} at ${ip}`);
-        registerDevice(name, ip, "mDNS");
-        if (name.toLowerCase().includes("sprinkler")) setSprinklerIP(ip);
-        if (name.toLowerCase().includes("powermeter")) setMeterIP(ip);
-    });
-}
-startBonjourDiscovery();
 
 /**
  * Creates an Express router for handling ESP32 device discovery and management operations.
@@ -267,6 +248,18 @@ export const espRoutes = (): express.Router => {
    */
   router.get("/ESPlist", (req, res) => res.json(ESPlist));
   router.get("/mDNSOther", (req, res) => res.json(mDNSOtherList));
+
+  router.get("/mDNSOtherRegister", (req, res) => {
+    const name = (req.query.name as string | undefined)?.trim();
+    const ip   = (req.query.ip   as string | undefined)?.trim();
+    if (!name || !ip) {
+      res.json({ success: false, error: "name and ip required" });
+      return;
+    }
+    mDNSOtherList[name] = ip;
+    console.log(`mDNS other registered: ${name} at ${ip}`);
+    res.json({ success: true, name, ip });
+  });
 
   router.get("/register", (req, res) => {
     const ip = (req.query.ip as string | undefined)
