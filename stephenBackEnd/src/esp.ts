@@ -4,6 +4,7 @@ import express from "express";
 import net from "net";
 import http, { IncomingMessage } from "http";
 import { broadcast } from "socket";
+import Bonjour from "bonjour-service";
 
 /**
  * ESP32 device discovery and management module.
@@ -43,13 +44,18 @@ type ESPlist = {
   [key: string]: {
     /** Last seen timestamp when device was discovered */
     date: Date;
-    /** Device name */
+    /** Device IP address */
     ip: string;
+    /** How the device was discovered: "scan" | "mDNS" | "self" | "server" */
+    source: string;
   };
 };
 
 /** Global registry of discovered ESP32 devices mapped by IP address */
 export const ESPlist: ESPlist = {};
+
+/** Non-ESP devices seen via mDNS (name → ip) */
+export const mDNSOtherList: { [name: string]: string } = {};
 
 /** Remove devices not seen in the last 12 hours. */
 function removeStaleDevices(): void {
@@ -66,7 +72,7 @@ function removeStaleDevices(): void {
  * Removes stale entries (>12h), evicts any existing entry sharing the same IP,
  * then upserts the device keyed by name.
  */
-function registerDevice(name: string, ip: string): void {
+function registerDevice(name: string, ip: string, source: string): void {
   removeStaleDevices();
 
   // Remove any existing entry whose IP matches (but has a different name)
@@ -76,7 +82,7 @@ function registerDevice(name: string, ip: string): void {
     }
   }
 
-  ESPlist[name] = { date: new Date(), ip };
+  ESPlist[name] = { date: new Date(), ip, source };
   broadcast("ESPlist", { ...ESPlist[name], name });
 }
 
@@ -156,7 +162,7 @@ function checkPort(i: number): Promise<number> {
           res.on("end", () => {
             if (data.includes("ESP")) {
               const currentIP = `${localNetworkPrefix}.${i}`;
-              registerDevice(data, currentIP);
+              registerDevice(data, currentIP, "scan");
               if (data.toLowerCase().includes("sprinkler")) setSprinklerIP(currentIP);
               if (data.toLowerCase().includes("powermeter")) setMeterIP(currentIP);
               //   console.log(`${data} found at: ${currentIP}`);
@@ -192,6 +198,25 @@ function checkPort(i: number): Promise<number> {
 // Initialize network scan and set up periodic scanning
 await ESPUpdate();
 setInterval(() => ESPUpdate(), 20 * 60 * 1000);
+
+// mDNS continuous discovery — picks up devices within seconds of them coming online
+function startBonjourDiscovery() {
+    const bonjour = new Bonjour();
+    bonjour.find({ type: "http" }).on("up", (service) => {
+        const name = service.name;
+        const ip = service.addresses?.find((a) => a.includes(".")); // IPv4 only
+        if (!ip) return;
+        if (!name.toUpperCase().includes("ESP")) {
+            mDNSOtherList[name] = ip;
+            return;
+        }
+        console.log(`mDNS discovered: ${name} at ${ip}`);
+        registerDevice(name, ip, "mDNS");
+        if (name.toLowerCase().includes("sprinkler")) setSprinklerIP(ip);
+        if (name.toLowerCase().includes("powermeter")) setMeterIP(ip);
+    });
+}
+startBonjourDiscovery();
 
 /**
  * Creates an Express router for handling ESP32 device discovery and management operations.
@@ -237,6 +262,7 @@ export const espRoutes = (): express.Router => {
    * @returns JSON response containing the ESPlist object with device information
    */
   router.get("/ESPlist", (req, res) => res.json(ESPlist));
+  router.get("/mDNSOther", (req, res) => res.json(mDNSOtherList));
 
   router.get("/register", (req, res) => {
     const ip = (req.query.ip as string | undefined)
@@ -251,7 +277,7 @@ export const espRoutes = (): express.Router => {
       .then((r) => r.text())
       .then((name) => {
         name = name.trim();
-        registerDevice(name, ip);
+        registerDevice(name, ip, "self");
         if (name.toLowerCase().includes("sprinkler")) setSprinklerIP(ip);
         if (name.toLowerCase().includes("powermeter")) setMeterIP(ip);
         console.log(`ESP registered: ${name} at ${ip}${diag ? `  [${diag}]` : ""}`);
