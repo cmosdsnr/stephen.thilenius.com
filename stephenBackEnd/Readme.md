@@ -57,6 +57,25 @@ dokku letsencrypt:enable servert
 dokku ps:restart servert
 ```
 
+## ESP32 Device Discovery
+
+The backend discovers ESP32 devices three ways (tracked via the `source` field in `ESPlist`):
+
+1. **Network scan** (`source: "scan"`) — on startup and every 20 min, `esp.ts` scans `192.168.x.1–254` port 80 and calls `/name` to identify ESP devices.
+2. **Self-registration** (`source: "self"`) — ESP devices call `GET /api/esp/register` on boot/reconnect.
+3. **mDNS bridge** (`source: "mDNS"`) — a host-side systemd service runs `avahi-browse` and forwards discoveries to the backend via HTTP. Once a device is confirmed via mDNS, that source is kept even if a scan also finds it.
+
+### mDNS Bridge Script
+Because the Dokku container cannot receive mDNS multicast, the bridge runs on the **host**. Script files are in `mDNS scripts/` at the repo root:
+
+- `esp-mdns-bridge.sh` — watches `avahi-browse` output and calls:
+  - `GET /api/esp/register?ip=<addr>&source=mDNS` for ESP devices
+  - `GET /api/esp/mDNSOtherRegister?name=<name>&ip=<addr>` for non-ESP devices (stored in `mDNSOtherList`)
+- `esp-mdns-bridge.service` — systemd unit (`Restart=always`) to keep the bridge running
+- `README.md` — install instructions
+
+See `mDNS scripts/README.md` for install steps.
+
 ## Documentation
 - **`yarn docs:generate`**: Uses TypeDoc to generate API documentation automatically and deploys it to the server (`copy-docs.bat`).
 - Read generated documentation at `/documentation/backend`.
