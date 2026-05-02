@@ -90,7 +90,7 @@ function registerDevice(name: string, ip: string, source: string): void {
 const hostIp = process.env.HOST_LAN_IP;
 console.log(`The server's Local IP is: ${hostIp}`);
 if (hostIp) {
-  ESPlist["Backend Server"] = { date: new Date(), ip: hostIp };
+  ESPlist["Backend Server"] = { date: new Date(), ip: hostIp, source: "server" };
 }
 
 //strip off the last number from the IP
@@ -113,7 +113,7 @@ export async function ESPUpdate() {
   removeStaleDevices();
   //reset time on backend server entry
   if (hostIp) {
-    ESPlist["Backend Server"] = { date: new Date(), ip: hostIp };
+    ESPlist["Backend Server"] = { date: new Date(), ip: hostIp, source: "server" };
   }
   let plist = [];
   for (let i = startRange; i <= endRange; i++) plist.push(checkPort(i));
@@ -204,7 +204,7 @@ function startBonjourDiscovery() {
     const bonjour = new Bonjour();
     bonjour.find({ type: "http" }).on("up", (service) => {
         const name = service.name;
-        const ip = service.addresses?.find((a) => a.includes(".")); // IPv4 only
+        const ip = service.addresses?.find((a: string) => a.includes(".")); // IPv4 only
         if (!ip) return;
         if (!name.toUpperCase().includes("ESP")) {
             mDNSOtherList[name] = ip;
