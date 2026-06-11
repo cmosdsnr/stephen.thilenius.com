@@ -18,6 +18,10 @@ sprinklerApp/dist/
 # Generated docs
 4inDisplay_S3/docs/html/
 
+# Environment files (never commit — contain secrets)
+.env
+.env.local
+
 # Misc
 *.pyc
 .DS_Store
