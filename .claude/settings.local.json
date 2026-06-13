@@ -39,7 +39,8 @@
       "Bash(grep -n \"AdminMenu\\\\|^\\\\s*</div>\\\\s*$\\\\|^\\\\s*\\)\\\\s*;\\\\s*$\" \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/PowerMeter.tsx\")",
       "Bash(grep -n \"AdminMenu\\\\|^\\\\s*</div>\\\\s*$\" \"C:/Users/steph/Git/thilenius.com/Stephen/stephenFrontEnd/src/components/Administrator/SophiesLoan.tsx\")",
       "Bash(find:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(grep:*)"
     ]
   }
 }

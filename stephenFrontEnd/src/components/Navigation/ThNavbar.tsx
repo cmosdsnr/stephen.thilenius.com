@@ -72,7 +72,6 @@ export default function ThNavbar() {
 
                     <NavDropdown title="Games" id="games-nav">
                         <NavDropdown.Item href="/games/wordle">Wordle</NavDropdown.Item>
-                        <NavDropdown.Item href="/games/oldWordle">Wordle Classic</NavDropdown.Item>
                         <NavDropdown.Item href="/games/Blossom">Blossom</NavDropdown.Item>
                         <NavDropdown.Item href="/games/Primes">Primes</NavDropdown.Item>
                         <NavDropdown.Item href="/games/Sudoku">Sudoku</NavDropdown.Item>

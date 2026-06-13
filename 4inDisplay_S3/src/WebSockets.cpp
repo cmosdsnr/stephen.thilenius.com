@@ -21,6 +21,16 @@ static String fragmentBuffer; ///< Buffer for assembling fragmented WebSocket fr
 static constexpr size_t WS_MAX_MSG_LEN = 4096; ///< Maximum allowed incoming message size.
 
 /**
+ * @brief Default project hooks (weak).
+ *
+ * A project that needs project-specific behavior defines its own (strong)
+ * version of these in <Project>/WebSockets.cpp and the linker picks it —
+ * see Sprinkler or Gliderport. Projects without one get these no-ops.
+ */
+__attribute__((weak)) void handleMessage() {}
+__attribute__((weak)) void addProjectVariables(JsonObject variables) {}
+
+/**
  * @brief Handles incoming WebSocket JSON messages.
  *
  * Reassembles fragmented frames, deserializes the JSON payload,

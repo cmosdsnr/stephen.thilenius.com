@@ -36,6 +36,8 @@ TabConfig::TabConfig(TFT_eSPI *tft) : Tab()
     nameWidth = _tft->textWidth(name.c_str());
     _knob = new TFT_eSprite(tft); //!< Sprite for the slide knob
     _s1 = new Slider(tft, _knob);
+    _s1->setSliderScale(3 * 4, 12 * 4);
+    _s1->setSliderPosition(8 * 4);
     changed = true;
 }
 
@@ -54,7 +56,7 @@ void TabConfig::draw()
     slide_t param;
 
     //! Slider slot parameters
-    param.slotWidth = _tft->width() - 10;  //!< Note: ends of slot will be rounded and anti-aliased
+    param.slotWidth = _tft->width() - 70;  //!< Leaves room for text area and knob
     param.slotHeight = SLIDER_H; //!< Length includes rounded ends
     param.slotColor = TFT_BLUE;  //!< Slot colour
     param.slotBgColor = bgColor; //!< Slot background colour for anti-aliasing

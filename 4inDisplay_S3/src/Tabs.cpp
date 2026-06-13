@@ -27,28 +27,7 @@ Tabs::Tabs(TFT_eSPI *tft, Networks *wifiNetworks)
     //! Initialize other tabs here
     tab[NETWORK_TAB] = new TabNetwork(_tft, wifiNetworks);
 
-#ifdef GLIDERPORT
-    tab[GLIDERPORT_TAB] = new TabGliderport(_tft);
-    tab[ROSE_TAB] = new TabRose(_tft);
-    tab[STATUS_TAB] = new TabStatus(_tft, wifiNetworks);
-#elif defined COFFEE
-    tab[COFFEE_TAB] = new TabCoffee(_tft);
-    tab[CONFIG_TAB] = new TabConfig(_tft);
-#elif defined GARAGE
-    tab[GARAGE_TAB] = new TabGarage(_tft);
-#elif defined DESK
-    tab[WIND_TAB] = new TabWind(_tft);
-    tab[DEVICES_TAB] = new TabDevices(_tft);
-    tab[POWER_TAB] = new TabPower(_tft);
-    tab[SHOT_TAB] = new TabShot(_tft);
-#elif defined SPRINKLER
-#include "Sprinkler/Sprinkler.h"
-    tab[SPRINKLER_TAB] = new TabSprinkler(_tft);
-    tab[STATUS_TAB] = new TabStatus(_tft);
-#elif defined POWERMETER
-#include "Power/PowerMeter.h"
-    tab[POWERMETER_TAB] = new TabPowerMeter(_tft);
-#endif
+    INIT_PROJECT_TABS();
 
     // Try font 4 first; fall back to font 2 if padding would be too tight
     _tft->setTextFont(4);

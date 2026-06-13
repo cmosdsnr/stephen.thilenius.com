@@ -35,28 +35,7 @@ SemaphoreHandle_t httpsGuard = NULL;
  * Logic depends on the specific module (Gliderport, etc.).
  */
 void trySocks();
-#ifdef GLIDERPORT
-#include "Gliderport/Gliderport.h"
-#include "Gliderport/GliderportTimer.h"
-#include "Gliderport/Sensors.h"
-#endif
-
-#ifdef GARAGE
-#include "Garage/Relays.h"
-#include "Garage/Distance.h"
-#endif
-
-#ifdef DESK
-#include "Desk/Ultimeter.h"
-#include "Desk/Shot.h"
-#endif
-
-#ifdef SPRINKLER
-#include "Sprinkler/Sprinkler.h"
-#endif
-#ifdef POWERMETER
-#include "Power/PowerMeter.h"
-#endif
+// Project-specific includes come in through ProjectConfig.h (via Tabs.h)
 
 #define NUM_LEDS 1
 int i = 0;
@@ -64,24 +43,34 @@ int i = 0;
 Networks *wifiNetworks = new Networks();
 
 // ── Boot diagnostics (survives software reset / crash, cleared on power cycle) ─
-RTC_DATA_ATTR static uint32_t _bootCount  = 0;
+RTC_DATA_ATTR static uint32_t _bootCount = 0;
 RTC_DATA_ATTR static uint32_t _crashCount = 0;
-char bootDiag[80] = "";  //!< formatted boot summary, sent to backend on WiFi connect
+char bootDiag[80] = ""; //!< formatted boot summary, sent to backend on WiFi connect
 
 static const char *_resetReasonStr(esp_reset_reason_t r)
 {
     switch (r)
     {
-    case ESP_RST_POWERON:   return "PowerOn";
-    case ESP_RST_EXT:       return "ExtPin";
-    case ESP_RST_SW:        return "Software";
-    case ESP_RST_PANIC:     return "Panic";
-    case ESP_RST_INT_WDT:   return "IntWDT";
-    case ESP_RST_TASK_WDT:  return "TaskWDT";
-    case ESP_RST_WDT:       return "WDT";
-    case ESP_RST_DEEPSLEEP: return "DeepSleep";
-    case ESP_RST_BROWNOUT:  return "Brownout";
-    default:                return "Unknown";
+    case ESP_RST_POWERON:
+        return "PowerOn";
+    case ESP_RST_EXT:
+        return "ExtPin";
+    case ESP_RST_SW:
+        return "Software";
+    case ESP_RST_PANIC:
+        return "Panic";
+    case ESP_RST_INT_WDT:
+        return "IntWDT";
+    case ESP_RST_TASK_WDT:
+        return "TaskWDT";
+    case ESP_RST_WDT:
+        return "WDT";
+    case ESP_RST_DEEPSLEEP:
+        return "DeepSleep";
+    case ESP_RST_BROWNOUT:
+        return "Brownout";
+    default:
+        return "Unknown";
     }
 }
 
@@ -128,13 +117,7 @@ void setup(void)
     InitI2C();
     scanI2CDevices();
     startEEprom();
-#ifdef DESK
-    ultimeter = new Ultimeter();
-    shot = new Shot();
-#endif
-#ifdef GARAGE
-    setupDistance();
-#endif
+    PROJECT_EARLY_SETUP();
 
     setupSD();
     cacheSDFiles();
@@ -160,20 +143,7 @@ void setup(void)
     trySocks();
     setupFtp();
 
-#ifdef GLIDERPORT
-    InitGliderportTimer();
-    sensors.initBMP();
-    sensors.reset();
-    sensors.sampleDht11();
-    sensors.sampleBmp();
-#endif
-
-#ifdef SPRINKLER
-    sprinklerSetup();
-#endif
-#ifdef POWERMETER
-    powerMeterSetup();
-#endif
+    PROJECT_LATE_SETUP();
 }
 
 /**
@@ -196,26 +166,7 @@ void loop(void)
         xSemaphoreGive(spiMutex);
     }
 
-#ifdef GARAGE
-    distanceLoop(); //!< update distance every 2sec
-    relays->Check();
-#endif
-
-#ifdef GLIDERPORT
-    gpLoop();
-#endif
-
-#ifdef DESK
-    ultimeter->loop();
-    shot->loop();
-#endif
-
-#ifdef SPRINKLER
-    sprinklerLoop();
-#endif
-#ifdef POWERMETER
-    block = powerMeterLoop();
-#endif
+    PROJECT_LOOP();
 
     webSerialInfo();
     wifiNetworks->loop(); //!< keep background scan going, make sure I'm on an available network

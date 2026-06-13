@@ -35,9 +35,53 @@ export function useWordEvaluator() {
 
     let topRanked: RankedGuess[] = statsAry
       .flatMap((s) => s.topRanked)
-      .sort((a, b) => (a.std === b.std ? b.letterScore! - a.letterScore! : a.std - b.std))
+      .sort((a, b) => (a.score === b.score ? b.letterScore! - a.letterScore! : a.score - b.score))
       .slice(0, 20);
     topRanked.forEach((e) => (e.letterScore = Math.round(e.letterScore! * 100) / 100));
+
+    // Perfect-score in-list promotion
+    //
+    // A score of 1.0 means every remaining candidate lands in its own unique bin,
+    // so this guess will always narrow the field to exactly one word — regardless
+    // of what feedback comes back.
+    //
+    // When that perfect-score word is also a possible answer (inList = true), we
+    // promote it to position 0. The information value is identical to any other
+    // score-1.0 word, but there is an added benefit: if it happens to be the
+    // actual answer, we solve the puzzle on this turn. That gives a 1-in-N chance
+    // of winning immediately rather than needing one more guess. Guessing an
+    // out-of-list word with score 1.0 can never win the puzzle outright, so the
+    // in-list word is strictly better when all else is equal.
+    //
+    // Problem: when many out-of-list words also score 1.0 (common with small lists —
+    // e.g. 2 remaining words means ~half the dictionary perfectly separates them),
+    // the in-list word can be ranked below position 20 by letter score and never
+    // appear in topRanked at all. findIndex would return -1 and promotion silently
+    // does nothing.
+    //
+    // Solution: each worker independently tracks the best in-list score-1.0 word in
+    // Stats.perfectInList, bypassing the top-20 letter-score cutoff. We pick the
+    // best one across all workers (highest letter score as tiebreaker) and guarantee
+    // it is at position 0, inserting it into the list if necessary.
+    const bestPerfectInList = statsAry
+      .map(s => s.perfectInList)
+      .filter((g): g is RankedGuess => g !== undefined)
+      .sort((a, b) => (b.letterScore ?? 0) - (a.letterScore ?? 0))[0];
+
+    if (bestPerfectInList) {
+      // Remove it from wherever it landed in the sorted list (if it made the top-20
+      // on letter score alone) so we don't duplicate it.
+      const existingIdx = topRanked.findIndex(g => g.word === bestPerfectInList.word);
+      if (existingIdx > 0) {
+        topRanked.splice(existingIdx, 1);
+        topRanked.unshift(bestPerfectInList);
+      } else if (existingIdx === -1) {
+        // It didn't make the top-20 — insert it at position 0 and drop the last entry.
+        topRanked.pop();
+        topRanked.unshift(bestPerfectInList);
+      }
+      // existingIdx === 0 means it's already first — nothing to do.
+    }
 
     let distribution = statsAry.flatMap((s) => s.distribution).sort((a, b) => a - b);
     setTopRanked(topRanked);

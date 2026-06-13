@@ -3,14 +3,12 @@
  * @brief Shared WebSocket codes and project extensions.
  */
 
+#pragma once
+
 /**
  * @brief Includes project-specific socket code definitions.
  */
-#include "Gliderport/SocketCodes.h"
-#include "Sprinkler/SocketCodes.h"
-#include "Desk/SocketCodes.h"
-#include "Garage/SocketCodes.h"
-#include "Coffee/SocketCodes.h"
+#include "ProjectConfig.h"
 
 // global variables for all projects
 #define LOCALTIME 0
@@ -32,3 +30,17 @@ typedef enum
     PARTITION,
     PIN_VALUES,
 } SocketCode;
+
+/**
+ * @brief Common project extension codes (>= 100).
+ *
+ * Shared by all projects; a project's handleMessage() decides how to
+ * respond. Projects with richer protocols (e.g. Sprinkler) define their
+ * own code families in <Project>/SocketCodes.h alongside these.
+ */
+typedef enum
+{
+    READ = 100,
+    UPDATE,
+    REQ_RES
+} ExtendedSocketCode;

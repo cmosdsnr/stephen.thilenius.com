@@ -9,7 +9,10 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include "Tab.h"
-#include "Networks.h"
+
+// Forward declaration only — including Networks.h here creates a circular
+// include (Networks.h → HostName.h → ProjectConfig.h → this file).
+class Networks;
 
 /**
  * @brief Gliderport status UI tab.

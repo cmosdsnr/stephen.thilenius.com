@@ -15,6 +15,7 @@
 
 #include "Garage/Distance.h"
 #include "Report.h"
+#include "I2C.h"
 
 VL53L0X sensor;
 bool sensorFound = false;

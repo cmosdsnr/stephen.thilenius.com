@@ -1,0 +1,54 @@
+#!/usr/bin/bash
+# files are deposited by sftp from Rpi ~/bin/put.sh into /media/cmosdsnr/passport/gliderport//media/cmosdsnr/passport/gliderport 
+# each filename will be of the form 2025-01-01.tar.gz
+# each tar file has 2 directories
+#   1. video (with two mp4 files, one for each camera)
+#   2. 2025-01-01 directory
+# after extraction the video files are already added to the video directory
+# create the yr/mo directory if it doesn't exists
+# move the extracted 2025-01-01 directory to the yr/mo directory
+#
+# delete bin log files to keep disk spave minimal
+# prune the docker images to reduce disk usage
+#
+shopt -s nullglob
+
+# Change to the target directory
+cd /media/cmosdsnr/passport/gliderport/images/ || exit
+
+# Move tar.gz files from home directory if they exist
+tar_files=(~/20*.tar.gz)
+if [ ${#tar_files[@]} -gt 0 ]; then
+    mv ~/20*.tar.gz /media/cmosdsnr/passport/gliderport/images/
+fi
+
+FILES=20*.tar.gz;
+
+for filename in $FILES
+do
+  if test -e $filename;
+  then
+   IFS='./' read -r -a array <<< $filename
+   name=${array[0]};
+   IFS='-' read -r -a date <<< $name
+   yr=${date[0]}
+   mo=${date[1]}
+   day=${date[2]}
+   #echo $filename;
+   #echo "name:$name mo/yr:$mo/$yr";
+   mkdir -p "$yr/$mo/" 
+   tar xf $filename
+   mv $name "$yr/$mo/"
+   mkdir -p "video/$yr"
+   mv video/"$yr"*.mp4 video/"$yr"
+   rm $filename
+  fi
+done
+
+sudo rm /var/lib/dokku/services/mysql/gliderport/data/binlog.*
+sudo docker system prune -a -f
+
+sudo sqlite3 /path/to/pb_data/auxiliary.db <<EOF
+DELETE FROM _logs WHERE created <= datetime('now', '-30 days');
+VACUUM;
+EOF

@@ -111,7 +111,7 @@ export function WssProvider({ children }: params) {
                             case "ESPlist":
                                 // Merge the new device entry into the existing map.
                                 const e = { ...ESPlist };
-                                e[message.data.name] = { date: new Date(message.data.date), ip: message.data.ip, elapsed: "00:00" };
+                                e[message.data.name] = { date: new Date(message.data.date), ip: message.data.ip, elapsed: "00:00", source: message.data.source };
                                 setESPlist(e)
                                 break;
                             case "sprinkler":

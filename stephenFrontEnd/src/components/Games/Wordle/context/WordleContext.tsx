@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, useContext, useRef, ReactNode } from 'react';
 import { frequencies } from '../src/Frequencies';
 import { firstGuess, nextGuess } from '../src/Guesses';
 import { useWords } from './useWords';
@@ -76,9 +76,26 @@ export function WordleProvider({ children }: Props): JSX.Element {
         working,
     } = useGameState(getNextBestWord);
 
+    const didInitialCompute = useRef(false);
+
     useEffect(() => {
-        if (allWords.length > 0) reset();
+        if (allWords.length > 0) {
+            didInitialCompute.current = false;
+            reset();
+        }
     }, [allWords])
+
+    // Compute topRanked once after the initial reset populates the word list
+    useEffect(() => {
+        if (
+            !didInitialCompute.current &&
+            current?.inputLists[0]?.length > 0 &&
+            topRanked.length === 0
+        ) {
+            didInitialCompute.current = true;
+            recalculateWord();
+        }
+    }, [current]);
 
     useEffect(() => {
         //if we changed allowed words

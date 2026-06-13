@@ -66,28 +66,13 @@ export const evaluate = (best, possibleWordList, wordList) => {
             binCounts[bin]++;
         }
 
-        let std = 0;
-        if (possibleWordList.length > 243) {
-            const mean = possibleWordList.length / 243;
-            std = Math.sqrt(
-                binCounts.reduce((sum, count) => sum + Math.pow(count - mean, 2), 0) / 243
-            );
-        } else {
-            // if possibleWordList.length < 243 then the best spread is acc having possibleWordList.length bins with 1 and the rest 0
-            // which has a mean of 1
-            std = binCounts.reduce((sum, count) => sum + count > 0 ? Math.pow(count - 1, 2) : 0, 0);
-            // count the number of non-zero bins 
-            const nonZeroCount = binCounts.filter(count => count > 0).length;
-            // if less than 243 words, ideal spread is in possibleWordList.length bins
-            // c is the number of bins that actually had non-zero values so there are 
-            // possibleWordList.length - c bins that are zero which ideally should not be.
-            // sdt component of each of these is 1 (mean =1, value=0 => (1-0)^2 = 1)
-            std += possibleWordList.length - nonZeroCount;
-            std = Math.sqrt(std / possibleWordList.length);
-        }
+        // Expected remaining candidates: Σ(binCount²) / N
+        // See evaluate.tsx for full derivation and explanation.
+        const N = possibleWordList.length;
+        const score = binCounts.reduce((sum, count) => sum + count * count, 0) / N;
 
-        if (!best.v || std < best.v) {
-            best.v = std;
+        if (!best.v || score < best.v) {
+            best.v = score;
             best.word = guess;
             best.acc = [...binCounts];
         }

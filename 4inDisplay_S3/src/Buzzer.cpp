@@ -160,6 +160,11 @@ void playSong()
  */
 void buzz(uint16_t freq, uint16_t ms)
 {
+    if (freq == 0 || ms == 0)
+    {
+        buzzerOn = 0;
+        return;
+    }
     uint32_t delay_us = 1000000 / (2 * freq);
     uint32_t cnt = (1000 * ms) / delay_us;
 

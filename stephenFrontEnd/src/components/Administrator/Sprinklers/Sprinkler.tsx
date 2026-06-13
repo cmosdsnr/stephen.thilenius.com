@@ -335,7 +335,7 @@ export default function Sprinkler() {
                                                 </tr>
                                                 <tr>
                                                     <td className="fw-semibold text-muted">channelActive</td>
-                                                    <td>{channelActive}</td>
+                                                    <td>{channelActive === -1 ? 'None' : channelActive}</td>
                                                     <td></td>
                                                 </tr>
                                                 {Object.keys(variables).map((key, idx) => {

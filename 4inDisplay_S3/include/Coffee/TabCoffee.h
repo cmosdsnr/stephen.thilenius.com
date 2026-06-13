@@ -37,15 +37,19 @@ public:
      */
     void handle(uint16_t x, uint16_t y, uint32_t lastClick) override;
 
+    /**
+     * @brief Get the configured fill time.
+     * @return Fill time in milliseconds
+     */
+    uint16_t getFillTime(void);
+
 private:
     TFT_eSPI *_tft;
-
-    bool _locked = true;
-    bool _lightOn = false;
-    bool _fillOn = false;
-
-    int16_t _fill_x, _fill_y;  // x and y can be negative
-    uint16_t _fill_w, _fill_h; //
+    TFT_eSprite *_knob;
+    Slider *_s1;
+    void drawBarFrame(int16_t y, const char *label);
+    void updateBar(int16_t y, uint8_t pct, uint8_t &last, bool &drawn, bool grow = true, const char *label = "");
+    void drawSlider();
 };
 
 #endif

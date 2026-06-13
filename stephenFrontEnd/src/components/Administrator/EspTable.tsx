@@ -5,7 +5,7 @@
  * Provides network scanning and device monitoring capabilities.
  */
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useWss } from '../../contexts/WssContext'
 import AdminPageLayout from './AdminPageLayout'
 import { API } from '../../api';
@@ -20,17 +20,29 @@ import { API } from '../../api';
 export default function EspTable(): JSX.Element {
 
     const { ESPlist, subscribe, unsubscribe } = useWss();
+    const [otherDevices, setOtherDevices] = useState<{ [name: string]: string }>({});
 
     useEffect(() => {
         subscribe("ESPlist");
         return () => { unsubscribe("ESPlist"); }
     }, [])
 
+    useEffect(() => {
+        fetch(API.mDNSOther())
+            .then(r => r.json())
+            .then(setOtherDevices)
+            .catch(() => {});
+    }, []);
+
     const handleRefresh = (): void => {
         fetch(API.ESPupdate())
             .then(response => response.text())
             .then(data => console.log('Rescan response:', data))
             .catch(error => console.error('Rescan failed:', error));
+        fetch(API.mDNSOther())
+            .then(r => r.json())
+            .then(setOtherDevices)
+            .catch(() => {});
     }
 
     const devices = Object.entries(ESPlist);
@@ -62,7 +74,7 @@ export default function EspTable(): JSX.Element {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem' }}>
                             <thead>
                                 <tr>
-                                    {['ESP', 'IP Address', 'Last Seen'].map(h => (
+                                    {['ESP', 'IP Address', 'Last Seen', 'Source'].map(h => (
                                         <th key={h} style={{ background: '#001830', color: '#6a9ac4', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', padding: '0.5rem 1rem', textAlign: 'left', borderBottom: '1px solid #1c3050' }}>
                                             {h}
                                         </th>
@@ -87,13 +99,16 @@ export default function EspTable(): JSX.Element {
                                             </a>
                                         </td>
                                         <td style={{ padding: '0.6rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#6a9ac4' }}>
-                                            {device.elapsed}
+                                            {deviceName !== 'Backend Server' ? device.elapsed : ''}
+                                        </td>
+                                        <td style={{ padding: '0.6rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#6a9ac4' }}>
+                                            {device.source ?? ''}
                                         </td>
                                     </tr>
                                 ))}
                                 {devices.length === 0 && (
                                     <tr>
-                                        <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: '#6a9ac4', fontFamily: 'Rajdhani, sans-serif', fontSize: '0.9rem', letterSpacing: '0.08em' }}>
+                                        <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: '#6a9ac4', fontFamily: 'Rajdhani, sans-serif', fontSize: '0.9rem', letterSpacing: '0.08em' }}>
                                             No devices found
                                         </td>
                                     </tr>
@@ -102,6 +117,40 @@ export default function EspTable(): JSX.Element {
                         </table>
                     </div>
                 </div>
+
+                {/* Other mDNS devices */}
+                {Object.keys(otherDevices).length > 0 && (
+                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,24,48,0.07)', overflow: 'hidden' }}>
+                        <div style={{ background: '#001830', borderBottom: '2px solid #f59e0b', padding: '0.75rem 1.25rem' }}>
+                            <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f59e0b' }}>
+                                Other mDNS Devices
+                            </span>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Share Tech Mono, monospace', fontSize: '0.82rem' }}>
+                                <thead>
+                                    <tr>
+                                        {['Name', 'IP Address'].map(h => (
+                                            <th key={h} style={{ background: '#001830', color: '#6a9ac4', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', padding: '0.5rem 1rem', textAlign: 'left', borderBottom: '1px solid #1c3050' }}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Object.entries(otherDevices).map(([name, ip], i) => (
+                                        <tr key={name} style={{ background: i % 2 ? 'rgba(0,24,48,0.03)' : 'white' }}>
+                                            <td style={{ padding: '0.6rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#001830', fontWeight: 600 }}>{name}</td>
+                                            <td style={{ padding: '0.6rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                <a href={`http://${ip}`} style={{ color: '#6a9ac4', textDecoration: 'none' }}>{ip}</a>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </AdminPageLayout>

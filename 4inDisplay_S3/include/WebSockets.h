@@ -2,12 +2,7 @@
 #include <ArduinoJson.h>
 #include <AsyncWebSocket.h>
 
-#include "Coffee/WebSockets.h"
-#include "Desk/WebSockets.h"
-#include "Garage/WebSockets.h"
-#include "Power/WebSockets.h"
-#include "Gliderport/WebSockets.h"
-#include "Sprinkler/WebSockets.h"
+#include "ProjectConfig.h"
 
 extern AsyncWebSocket ws;
 extern DynamicJsonDocument doc;
@@ -55,5 +50,7 @@ String handleVariables(uint8_t variableNumber, String value);
 String handleEvent(String event);
 /** @brief Handles a response payload. */
 void handleResponse(DynamicJsonDocument doc);
-/** @brief Handles module-specific messages. */
+/** @brief Handles module-specific messages. Weak no-op default in WebSockets.cpp. */
 void handleMessage();
+/** @brief Adds project-specific variables to a JSON payload. Weak no-op default in WebSockets.cpp. */
+void addProjectVariables(JsonObject variables);

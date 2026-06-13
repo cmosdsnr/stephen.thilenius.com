@@ -124,7 +124,6 @@ void Slider::setSliderPosition(int16_t val)
  */
 int16_t Slider::getSliderPosition(void)
 {
-    printf("getSliderPosition: %d %d %d %d\n", _invert ? _sliderMax - _sliderPos : _sliderPos, _sliderMin, _sliderMax, _sliderPos);
     return _invert ? _sliderMax - _sliderPos : _sliderPos;
 }
 
@@ -259,6 +258,7 @@ void Slider::drawValue()
     _tft->fillRoundRect(_sxs + 1, _sys + 1, _textWidth, _height - 2, _height / 4, _slotBgColor);
     uint8_t pos = getSliderPosition();
     _tft->drawString(String(getSliderPosition() / 4), _sxs + 6 + (pos < 40 ? 4 : 0), _sys, 2);
+    _tft->setTextSize(1);
 }
 
 /**

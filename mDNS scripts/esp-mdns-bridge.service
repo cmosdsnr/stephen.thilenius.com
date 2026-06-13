@@ -1,0 +1,12 @@
+[Unit]
+Description=mDNS → backend bridge (ESP32 + other devices)
+After=network.target avahi-daemon.service
+Requires=avahi-daemon.service
+
+[Service]
+ExecStart=/usr/local/bin/esp-mdns-bridge.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

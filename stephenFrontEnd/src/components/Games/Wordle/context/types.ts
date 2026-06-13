@@ -48,10 +48,10 @@ export type GameStep = {
     individualBestGuess: string[];
 
     /**
-     * Standard deviation score for each word in `individualBestGuess`.
-     * Lower is better — a smaller spread across accuracy bins means more information.
+     * Expected remaining candidates score for each word in `individualBestGuess`.
+     * Lower is better — a score of 1.0 means perfect elimination (every answer in its own bin).
      */
-    individualBestGuessStd: number[];
+    individualBestGuessScore: number[];
 
     /**
      * The single recommended guess for this step, optimal across all target words.
@@ -119,7 +119,7 @@ export type GameStep = {
 
     /**
      * Letter frequency weight matrix used as a tiebreaker when two candidate guesses
-     * have equal std. Shape: [5][26] — one weight per (position, letter).
+     * have equal score. Shape: [5][26] — one weight per (position, letter).
      * Derived from `letterCounts.percentages`; weights for `usedLetters` are zeroed out.
      */
     letterValue: number[][];
@@ -159,20 +159,28 @@ export interface RankedGuess {
     word: string;
 
     /**
-     * Standard deviation of bin counts when this word is used as a guess against
-     * the current possible-answer list. Lower = more informative guess.
+     * Expected remaining candidates when this word is used as a guess against
+     * the current possible-answer list.
+     *
+     * Computed as Σ(binCount²) / N, where N is the number of remaining candidates
+     * and binCount is the number of answers that would fall into each of the 243
+     * feedback bins.  Equivalently, reading from the Outcome Probability table:
+     *   score = Σ_rows( binSize × prob )
+     *
+     * A score of 1.0 is perfect (every answer lands in a unique bin).
+     * Lower = better guess.
      */
-    std: number;
+    score: number;
 
     /**
      * Sum of position-weighted letter frequencies for this word.
-     * Used as a tiebreaker when two words have identical std.
+     * Used as a tiebreaker when two words have identical score.
      */
     letterScore?: number;
 
     /**
      * Rank group: 1 = best tier, 2 = second-best, etc.
-     * Words with identical std share a rank.
+     * Words with identical score share a rank.
      */
     rank?: number;
 
@@ -195,7 +203,7 @@ export interface RankedGuess {
  */
 export interface Stats {
     /**
-     * Top 20 candidate guesses sorted by ascending std (best first).
+     * Top 20 candidate guesses sorted by ascending score (best first).
      * Initialized with 20 Infinity placeholders; real entries displace them
      * as the worker processes each candidate word.
      */
@@ -205,8 +213,17 @@ export interface Stats {
     worst: RankedGuess;
 
     /**
-     * Std score for every word evaluated by this worker, in evaluation order.
-     * Used to build the bin-distribution chart.
+     * Expected-remaining-candidates score for every word evaluated by this worker,
+     * in evaluation order. Used to build the score distribution chart.
      */
     distribution: number[];
+
+    /**
+     * The best in-list word (possible answer) that achieved a perfect score of 1.0,
+     * tracked separately from topRanked. When many out-of-list words also score 1.0
+     * with higher letter scores, the in-list word can be pushed entirely out of the
+     * top-20. This field guarantees it survives the merge and can be promoted.
+     * Undefined if no in-list word scored 1.0 in this worker's slice.
+     */
+    perfectInList?: RankedGuess;
 }

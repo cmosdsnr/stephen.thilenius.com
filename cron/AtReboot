@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+rm /home/cmosdsnr/Desktop/mount.txt
+
+sleep 30
+if grep windowsShare /etc/mtab 
+then
+ echo "drive mounted" 
+ echo "drive mounted" > /home/cmosdsnr/Desktop/mount.txt
+else
+ echo "drive not mounted"
+ echo "drive not mounted" > /home/cmosdsnr/Desktop/mount.txt
+ sudo mount -t cifs -o username=steph,password=0yrs.left '//192.168.0.2/d/Raspberry Pi Shares' /home/cmosdsnr/windowsShare/
+fi
+
+# kick off the HLS timer
+rm /home/cmosdsnr/cron/hls_stream_timer.lock
+/home/cmosdsnr/cron/hls_stream_timer.sh > /home/cmosdsnr/log/hls_stream_timer.log 2>&1 &
+
+#set IP address for stephen server
+sleep 60 && /usr/bin/dokku config:set stephen HOST_LAN_IP=$(/sbin/ip route get 1 | awk '{print $7; exit}')

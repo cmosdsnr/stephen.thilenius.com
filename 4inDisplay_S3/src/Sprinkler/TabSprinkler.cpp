@@ -46,7 +46,7 @@
  */
 TabSprinkler::TabSprinkler(TFT_eSPI *tft) : Tab()
 {
-    name = "Sprinkler";
+    name = "Manual";
     _tft = tft;
     nameWidth = _tft->textWidth(name.c_str());
     changed = true;

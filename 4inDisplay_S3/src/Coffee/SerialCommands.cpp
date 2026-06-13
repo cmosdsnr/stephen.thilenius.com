@@ -5,11 +5,16 @@
 
 #ifdef COFFEE
 #include "Coffee/SerialCommands.h"
+#include "Coffee/Relays.h"
 #include "SerialMenu.h"
 #include "Report.h"
 #include <Arduino.h>
 
 constexpr MenuItem menu2[] = {{'0', "Main menu", 0, nullptr},
+                               {'a', "Toggle Lights (pin 47)", 0, nullptr},
+                               {'b', "Toggle Fill (pin 6)", 0, nullptr},
+                               {'c', "Toggle Lock (pin 15)", 0, nullptr},
+                               {'d', "Toggle LockH (pin 7)", 0, nullptr},
                                {'?', "This help", 0, nullptr}};
 const size_t menu2Size = sizeof(menu2) / sizeof(menu2[0]);
 
@@ -31,8 +36,24 @@ void handleCommand(char command, char *data)
         SerialMenu.menuSelector = MAIN_MENU;
         SerialMenu.printMenu(MAIN_MENU);
         break;
+    case 'a': //!< Toggle Lights (pin 47)
+        relays->LightsToggle();
+        printf("Lights: %s\n", relays->AreLightsOn() ? "ON" : "OFF");
+        break;
+    case 'b': //!< Toggle Fill (pin 6)
+        relays->FillToggle();
+        printf("Fill: %s\n", relays->IsFillOn() ? "ON" : "OFF");
+        break;
+    case 'c': //!< Toggle Lock (pin 15)
+        relays->LockToggle();
+        printf("Lock: %s\n", relays->IsLockOn() ? "ON" : "OFF");
+        break;
+    case 'd': //!< Toggle LockH (pin 7)
+        relays->LockhToggle();
+        printf("LockH: %s\n", relays->IsLockhOn() ? "ON" : "OFF");
+        break;
     case '?': //!< This help
-        SerialMenu.printMenu(MAIN_MENU);
+        SerialMenu.printMenu(SPEC_MENU);
         break;
     }
 }

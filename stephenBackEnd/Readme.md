@@ -41,20 +41,20 @@ Remote `.env` should include:
 ### Dokku Setup & Configuration
 ```bash
 # Create app
-dokku apps:create servert
+dokku apps:create stephen
 
 # Setup local storage mounts
-dokku storage:mount servert '/media/cmosdsnr/passport/galleries:/app/galleries'
-dokku storage:mount servert '/var/lib/dokku/data/storage/server:/app/storage'
+dokku storage:mount stephen '/media/cmosdsnr/passport/galleries:/app/galleries'
+dokku storage:mount stephen '/var/lib/dokku/data/storage/server:/app/storage'
 
 # Link networks
-dokku network:set pbNetwork attach-post-create servert
-dokku network:set servert attach-post-create pbNetwork
+dokku network:set pbNetwork attach-post-create stephen
+dokku network:set stephen attach-post-create pbNetwork
 
 # Configure NGINX and SSL
-dokku nginx:set servert client-max-body-size 10G
-dokku letsencrypt:enable servert
-dokku ps:restart servert
+dokku nginx:set stephen client-max-body-size 10G
+dokku letsencrypt:enable stephen
+dokku ps:restart stephen
 ```
 
 ## ESP32 Device Discovery
@@ -88,8 +88,8 @@ See `mDNS scripts/README.md` for install steps.
 ```bash
 git remote remove github 
 git remote add github https://github.com/cmosdsnr/server.thilenius.git
-git remote add dokku_alec dokku@thilenius.org:servert
-git remote add budd dokku@buddbliss.com:servert
+git remote add dokku_alec dokku@thilenius.org:stephen
+git remote add budd dokku@buddbliss.com:stephen
 ```
 
 **Find and Remove Large Files in History:**

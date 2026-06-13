@@ -288,8 +288,8 @@ void Ultimeter::sendWindDataToServer(uint64_t hour, uint64_t tick, float speed, 
     if (WiFi.status() == WL_CONNECTED && !isSending)
     {
         isSending = true;
-
-        String url = "https://stephen.thilenius.com/api/ultimeterUpdate";
+        String url = "https://stephen.stephen-c19.workers.dev/api/ultimeterUpdate";
+        // String url = "https://stephen.thilenius.com/api/ultimeterUpdate";
         if (!http.begin(client, url))
         {
             printf("begin() failed\n");
@@ -381,7 +381,8 @@ void Ultimeter::pingServer()
     {
         isSending = true;
 
-        String url = "https://stephen.thilenius.com/api/ultimeterPing";
+        String url = "https://stephen.stephen-c19.workers.dev/api/ultimeterPing";
+        // String url = "https://stephen.thilenius.com/api/ultimeterPing";
         if (!http.begin(client, url))
         {
             printf("begin() failed\n");

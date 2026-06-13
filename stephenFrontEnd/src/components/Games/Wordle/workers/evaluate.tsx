@@ -45,11 +45,16 @@ export const evaluate = (
     wordList: string[],
     letterValue: number[][]
 ): Stats => {
-    // Initialize the topRanked array with placeholder entries, each having a high std value
+    // Initialize the topRanked array with placeholder entries.
+    // score starts at Infinity so every real word will displace them.
     let stats: Stats = {
-        topRanked: Array(20).fill(0).map(() => ({ std: Infinity, word: "" })),
-        worst: { std: 0, word: "" },
-        distribution: []
+        topRanked: Array(20).fill(0).map(() => ({ score: Infinity, word: "" })),
+        worst: { score: 0, word: "" },
+        distribution: [],
+        // perfectInList is populated below if any in-list word scores 1.0.
+        // It is tracked outside topRanked because out-of-list words with score 1.0
+        // but higher letter scores can push the in-list word out of the top-20.
+        perfectInList: undefined,
     };
 
     for (let i = 0; i < wordList.length; i++) {
@@ -57,6 +62,8 @@ export const evaluate = (
         // Periodically send progress updates back to the main thread for UI responsiveness
         if (i > 0 && i % 20 === 0) self.postMessage({ type: "update", status: 20 });
 
+        // Simulate every possible answer and record which feedback bin it would land in.
+        // There are 3^5 = 243 possible feedback patterns (gray/yellow/green per position).
         const binCounts = Array(243).fill(0);
         possibleWordList.forEach((possibleWord) => {
             const pattern = getAccuracyPattern(dictionaryWordToAnalyze, possibleWord);
@@ -64,23 +71,39 @@ export const evaluate = (
             binCounts[bin]++;
         });
 
-        let std = 0;
+        // ── Expected remaining candidates ──────────────────────────────────────────
+        //
+        // After this guess resolves, the answer will be revealed to live in exactly
+        // one bin.  If the true answer is drawn at random from the N remaining
+        // candidates, the probability it falls in bin b is:
+        //
+        //   P(bin b) = binCounts[b] / N
+        //
+        // and if it does fall in bin b we will be left with binCounts[b] candidates.
+        // The expected number of candidates remaining is therefore:
+        //
+        //   score = Σ_b  P(bin b) × binCounts[b]
+        //         = Σ_b  (binCounts[b] / N) × binCounts[b]
+        //         = Σ_b  binCounts[b]² / N
+        //
+        // Equivalently, thinking in terms of the Outcome Probability table:
+        //   each row has a binSize k, numBins bins of that size, and
+        //   prob = (k × numBins) / N.
+        //   score = Σ_rows  binSize × prob
+        //         = Σ_rows  k × (k × numBins) / N
+        //         = Σ_rows  k² × numBins / N
+        //
+        // A score of 1.0 is perfect — every remaining answer lands in its own unique
+        // bin, so whichever feedback we get, exactly one candidate survives.
+        // Higher scores mean larger groups of candidates survive on average.
+        // Lower score = better guess.
+        const N = possibleWordList.length;
+        const score = binCounts.reduce((sum, count) => sum + count * count, 0) / N;
 
-        if (possibleWordList.length > 243) {
-            const mean = possibleWordList.length / 243;
-            std = Math.sqrt(
-                binCounts.reduce((sum, count) => sum + Math.pow(count - mean, 2), 0) / 243
-            );
-        } else {
-            std = binCounts.reduce((sum, count) => sum + (count > 0 ? Math.pow(count - 1, 2) : 0), 0);
-            const nonZeroCount = binCounts.filter(count => count > 0).length;
-            std += possibleWordList.length - nonZeroCount;
-            std = Math.sqrt(std / possibleWordList.length);
-        }
-        stats.distribution.push(std);
+        stats.distribution.push(score);
 
         // Start from the lowest rank (worst of the top 20) and work backwards to find where the current guess fits
-        if (std <= stats.topRanked[19].std) {
+        if (score <= stats.topRanked[19].score) {
             let rankWeHaveNotYetBeat = 19;
             let letterScore = 0;
             dictionaryWordToAnalyze.split('').forEach((letter, i) => {
@@ -91,9 +114,20 @@ export const evaluate = (
                 }
             });
             let inList = possibleWordList.indexOf(dictionaryWordToAnalyze) > -1;
-            if (std === stats.topRanked[0].std && !stats.topRanked[rankWeHaveNotYetBeat].inList && inList) {
+
+            // Track the best in-list perfect-score word separately.
+            // Many out-of-list words may also score 1.0 with higher letter scores,
+            // which would push this word out of topRanked entirely. Keeping it here
+            // ensures it survives the merge and can be promoted in useWordEvaluator.
+            if (score === 1 && inList) {
+                if (!stats.perfectInList || letterScore > (stats.perfectInList.letterScore ?? 0)) {
+                    stats.perfectInList = { score, word: dictionaryWordToAnalyze, letterScore, binCounts: [...binCounts], inList: true };
+                }
+            }
+
+            if (score === stats.topRanked[0].score && !stats.topRanked[rankWeHaveNotYetBeat].inList && inList) {
                 stats.topRanked.unshift({
-                    std,
+                    score,
                     word: dictionaryWordToAnalyze,
                     letterScore,
                     binCounts: [...binCounts],
@@ -102,18 +136,18 @@ export const evaluate = (
                 stats.topRanked.pop();
             } else {
                 // Find the rank we have not yet beaten
-                while (rankWeHaveNotYetBeat >= 0 && std < stats.topRanked[rankWeHaveNotYetBeat].std) rankWeHaveNotYetBeat--;
+                while (rankWeHaveNotYetBeat >= 0 && score < stats.topRanked[rankWeHaveNotYetBeat].score) rankWeHaveNotYetBeat--;
                 rankWeHaveNotYetBeat++;
 
                 // if we've tied the ranks, but we have a better letter score, keep going
                 while (rankWeHaveNotYetBeat >= 1 &&
-                    std === stats.topRanked[rankWeHaveNotYetBeat - 1].std &&
+                    score === stats.topRanked[rankWeHaveNotYetBeat - 1].score &&
                     letterScore > stats.topRanked[rankWeHaveNotYetBeat - 1].letterScore!)
                     rankWeHaveNotYetBeat--;
 
 
                 stats.topRanked.splice(rankWeHaveNotYetBeat, 0, {
-                    std,
+                    score,
                     word: dictionaryWordToAnalyze,
                     letterScore,
                     binCounts: [...binCounts],
@@ -123,9 +157,9 @@ export const evaluate = (
             }
 
 
-            if (i === 0 || std > stats.worst.std) {
+            if (i === 0 || score > stats.worst.score) {
                 stats.worst = {
-                    std,
+                    score,
                     word: dictionaryWordToAnalyze,
                     binCounts: [...binCounts],
                 };

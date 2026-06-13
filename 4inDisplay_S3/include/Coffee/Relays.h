@@ -75,6 +75,10 @@ public:
      */
     void LockhOff();
     /**
+     * @brief Toggle lock hold.
+     */
+    void LockhToggle();
+    /**
      * @brief Per-loop updates for the relay controller.
      */
     void loop();
@@ -95,6 +99,11 @@ public:
      */
     bool IsLockOn() { return _lock; }
     /**
+     * @brief Check if lock hold is on.
+     * @return True if lock hold is on
+     */
+    bool IsLockhOn() { return _lockh; }
+    /**
      * @brief Get last motion pin value.
      * @return Motion pin state
      */
@@ -104,6 +113,11 @@ public:
      * @return Percent for fill
      */
     uint8_t getPercentFill() { return _percentFill; }
+    /**
+     * @brief Get lights percent remaining.
+     * @return Percent remaining for lights
+     */
+    uint8_t getPercentLights() { return _percentLights; }
 
 private:
     bool _fill, _lights, _lock, _lockh;

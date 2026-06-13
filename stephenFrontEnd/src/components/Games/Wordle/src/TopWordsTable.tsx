@@ -32,7 +32,7 @@ export default function TopWordsTable({ topRanked, current, replaceWord, removeW
                                 <thead className="table-dark">
                                     <tr>
                                         <th>Word</th>
-                                        <th>Std Dev</th>
+                                        <th title="Expected number of candidates remaining after this guess resolves. Lower = better. 1.0 is perfect.">Exp. Remaining</th>
                                         <th>Letter Score</th>
                                     </tr>
                                 </thead>
@@ -46,7 +46,7 @@ export default function TopWordsTable({ topRanked, current, replaceWord, removeW
                                                 onContextMenu={(e) => { e.preventDefault(); makeWordInvalid(n.word); }}
                                             >
                                                 <td>{n.word}</td>
-                                                <td>{(Math.round(n.std * 10) / 10).toFixed(1)}</td>
+                                                <td>{(Math.round(n.score * 10) / 10).toFixed(1)}</td>
                                                 <td>{n.letterScore?.toFixed(1) ?? '-'}</td>
                                             </tr>
                                         ))}
@@ -64,11 +64,11 @@ export default function TopWordsTable({ topRanked, current, replaceWord, removeW
                             </thead>
                             <tbody>
                                 <tr className="table-warning">
-                                    <th>Possible</th><td>{current?.combinedList.length}</td>
+                                    <th>Possible remaining words</th><td>{current?.combinedList.length}</td>
                                 </tr>
                                 <tr className="table-success">
-                                    <th>Best Std</th>
-                                    <td>{topRanked?.[0]?.std !== undefined ? (Math.round(topRanked[0].std * 100) / 100).toFixed(2) : '-'}</td>
+                                    <th title="Expected remaining candidates for the best guess. 1.0 = perfect elimination.">Best Score</th>
+                                    <td>{topRanked?.[0]?.score !== undefined ? (Math.round(topRanked[0].score * 100) / 100).toFixed(2) : '-'}</td>
                                 </tr>
                             </tbody>
                         </table>

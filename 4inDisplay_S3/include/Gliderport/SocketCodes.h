@@ -21,14 +21,8 @@
 #define SENSOR_BMP_TEMP 12
 #define SENSOR_PRESSURE 13
 
-/**
- * @brief Gliderport websocket extension codes.
- */
-typedef enum
-{
-    READ = 100,
-    UPDATE
-} ExtendedSocketCode;
+// READ / UPDATE extension codes come from the shared ExtendedSocketCode
+// enum in include/SocketCodes.h.
 
 #endif
 #endif

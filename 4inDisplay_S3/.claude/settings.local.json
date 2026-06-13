@@ -10,7 +10,32 @@
       "Bash(yarn build:*)",
       "Bash(xargs grep:*)",
       "Bash(grep:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(ls C:/Git/thilenius.com/Stephen/4inDisplay_S3/include/*.h)",
+      "Bash(~/.platformio/penv/Scripts/platformio.exe run:*)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(find /c/Git/thilenius.com/Stephen/4inDisplay_S3 -type f \\\\\\( -name \"*.h\" -o -name \"*.cpp\" \\\\\\) ! -path \"*/.pio/*\" ! -path \"*/.git/*\" ! -path \"*/docs/*\" ! -path \"*/old_code/*\" -exec grep -l \"ifdef\\\\|ifndef\" {} \\\\;)",
+      "Bash(find include:*)",
+      "Bash(pio run:*)",
+      "PowerShell($env:Path -split ';' | Where-Object { $_ -match 'platform' -or $_ -match 'pio' })",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e coffee 2>&1 | Select-Object -Last 40)",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e desk 2>&1 | Select-Object -Last 10)",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e coffee -t upload 2>&1 | Select-Object -Last 30)",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e coffee -t upload 2>&1 | Select-Object -Last 10)",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e coffee 2>&1 | Select-Object -Last 15)",
+      "PowerShell(git *)",
+      "PowerShell(Get-ChildItem C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3 | Select-Object Name; Get-ChildItem C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\src -Recurse -File | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\('C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\',''\\) })",
+      "PowerShell($a = Get-ChildItem C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\src\\\\Sprinkler -File; $b = Get-ChildItem C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\src\\\\SprinklerNew -File; foreach \\($f in $a\\) { $other = $b | Where-Object Name -eq $f.Name; if \\($other\\) { $same = \\(\\(Get-FileHash $f.FullName\\).Hash -eq \\(Get-FileHash $other.FullName\\).Hash\\); \"$\\($f.Name\\): identical=$same\" } else { \"$\\($f.Name\\): only in Sprinkler\" } })",
+      "PowerShell(Get-ChildItem C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\include -Recurse -File | ForEach-Object { $_.FullName.Replace\\('C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\include\\\\',''\\) })",
+      "PowerShell($j = Get-Content C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\espserver\\\\package.json | ConvertFrom-Json; \"espserver scripts:\"; $j.scripts | Format-List; \"deps: react-scripts=$\\($j.dependencies.'react-scripts'\\)\"; '--- diff size Sprinkler vs New ---'; $diff = git -C C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3 diff --no-index --stat src/Sprinkler src/SprinklerNew 2>$null; $diff | Select-Object -Last 5)",
+      "PowerShell(gh repo view cmosdsnr/stephen.thilenius.com --json visibility,isPrivate 2>&1)",
+      "PowerShell(foreach \\($dev in 'Coffee','Desk','Garage','Gliderport','Power','Sprinkler'\\) { foreach \\($f in 'WebSockets.cpp','SerialCommands.cpp','EpromData.cpp'\\) { $p = \"C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\src\\\\$dev\\\\$f\"; if \\(Test-Path $p\\) { $lines = \\(Get-Content $p | Measure-Object -Line\\).Lines; \"{0,-12} {1,-22} {2,5} lines\" -f $dev, $f, $lines } } })",
+      "PowerShell(foreach \\($dev in 'Coffee','Desk','Garage','Gliderport','Power','Sprinkler'\\) { foreach \\($f in 'SocketCodes.h','WebSockets.h','SerialCommands.h','EpromData.h'\\) { $p = \"C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3\\\\include\\\\$dev\\\\$f\"; if \\(Test-Path $p\\) { $lines = \\(Get-Content $p | Measure-Object -Line\\).Lines; \"{0,-12} {1,-20} {2,5} lines\" -f $dev, $f, $lines } } })",
+      "PowerShell($base = 'C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3'; $files = @\\('src\\\\Coffee\\\\WebSockets.cpp','src\\\\Garage\\\\WebSockets.cpp','src\\\\Desk\\\\WebSockets.cpp','include\\\\Coffee\\\\WebSockets.h','include\\\\Coffee\\\\SocketCodes.h','include\\\\Garage\\\\WebSockets.h','include\\\\Garage\\\\SocketCodes.h','include\\\\Desk\\\\WebSockets.h','include\\\\Desk\\\\SocketCodes.h','include\\\\Power\\\\WebSockets.h','include\\\\Power\\\\SocketCodes.h','include\\\\Gliderport\\\\WebSockets.h'\\); foreach \\($f in $files\\) { Remove-Item \"$base\\\\$f\" -Confirm:$false; \"deleted $f\" })",
+      "PowerShell(pio *)",
+      "PowerShell($candidates = \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\", \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\platformio.exe\"; foreach \\($c in $candidates\\) { if \\(Test-Path $c\\) { \"FOUND: $c\"; & $c --version; break } })",
+      "PowerShell(Set-Location C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3; & \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run 2>&1 | Select-String -Pattern 'Building|Processing|SUCCESS|FAILED|error:|Error|undefined reference' | ForEach-Object { $_.Line })",
+      "PowerShell(Set-Location C:\\\\Git\\\\thilenius.com\\\\Stephen\\\\4inDisplay_S3; & \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run -e sprinkler -e coffee -e desk -e gliderport -e powermeter -e garage 2>&1 | Select-String -Pattern 'Processing|SUCCESS|FAILED|error:|undefined reference' | ForEach-Object { $_.Line })"
     ]
   }
 }

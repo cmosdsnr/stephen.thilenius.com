@@ -8,6 +8,8 @@ import { Row, Col, Button } from 'react-bootstrap';
 import _ from 'lodash';
 
 import TopWordsTable from './TopWordsTable';
+import BinCountTable from './BinCountTable';
+import BinProbTable from './BinProbTable';
 import WordGame from './WordGame';
 import { useWordle } from '../context/WordleContext';
 import './Wordle.css';
@@ -59,7 +61,7 @@ export default function Quord() {
     }
 
     return (
-        <>
+        <div style={{ padding: '0 10px' }}>
             <WordGame />
             <Row className="mb-3">
                 <Col xs={12} md={6}>
@@ -83,7 +85,13 @@ export default function Quord() {
                 replaceWord={replaceWord}
                 removeWord={removeWord}
             />}
-        </>
+            {gameData?.length > 0 && topRanked?.length > 0 && (
+                <BinCountTable topRanked={topRanked} currentWord={current?.word} currentAccuracies={current?.accuracies?.[0]} />
+            )}
+            {gameData?.length > 0 && topRanked?.length > 0 && (
+                <BinProbTable topRanked={topRanked} currentWord={current?.word} />
+            )}
+        </div>
     );
 }
 

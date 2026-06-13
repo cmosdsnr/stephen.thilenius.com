@@ -168,7 +168,7 @@ export default function SolarEdge() {
      */
     const [rangeParams, setRangeParams] = useState<{ from: Date }>(() => {
         const now = new Date();
-        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0) };
+        return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0) };
     });
 
     /** WebSocket context for live solar data updates */
@@ -207,7 +207,10 @@ export default function SolarEdge() {
         },
         {
             keepPreviousData: true,
-            onSuccess: () => setLastSolarEdgeUpdate(new Date()),
+            onSuccess: (result) => {
+                setLastSolarEdgeUpdate(new Date());
+                setRange(result.range);
+            },
         }
     );
 
@@ -260,9 +263,9 @@ export default function SolarEdge() {
      */
     useEffect(() => {
         const now = new Date();
-        const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 0, 0, 0, 0);
+        const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
         setSelectedDate(from);
-        setNumDays(2);
+        setNumDays(1);
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         console.log(timeZone);
         console.log((new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() - 36, 0, 0, 0)).toLocaleString());
@@ -284,13 +287,19 @@ export default function SolarEdge() {
         if (!ignoreUpdates && solarEdgeUpdate) {
             const newPoint = { timestamp: 1000 * solarEdgeUpdate[0], power: solarEdgeUpdate[1] / 1000 };
             livePointsRef.current.push(newPoint);
-            setLastSolarEdgeUpdate(new Date());
+            const now = new Date();
+            setLastSolarEdgeUpdate(now);
+            setRange(prev => ({ ...prev, to: now }));
             if (chartRef.current) {
                 chartRef.current.data.datasets[0].data.push({ x: newPoint.timestamp, y: newPoint.power });
-                chartRef.current.update('none');
+                if (chartRef.current.isZoomedOrPanned()) {
+                    chartRef.current.update('none');
+                } else {
+                    chartRef.current.resetZoom();
+                }
             }
         }
-    }, [solarEdgeUpdate]);
+    }, [solarEdgeUpdate, ignoreUpdates]);
 
     /** Reset live points and zoom whenever a new range is fetched */
     useEffect(() => {

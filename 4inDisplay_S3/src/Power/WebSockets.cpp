@@ -9,7 +9,6 @@
 
 #include "Clock.h"
 #include "WebSockets.h"
-#include "Power/SocketCodes.h"
 #include "SocketCodes.h"
 #include "Json.h"
 
@@ -23,7 +22,7 @@
 void updateRequest()
 {
     doc.clear();
-    doc["code"] = SocketCode::REQ_RES;
+    doc["code"] = ExtendedSocketCode::REQ_RES;
 }
 
 /**
@@ -50,7 +49,7 @@ void handleMessage()
     case ExtendedSocketCode::UPDATE:
         updateRequest();
         break;
-    case SocketCode::REQ_RES:
+    case ExtendedSocketCode::REQ_RES:
         break;
     default:
         break;

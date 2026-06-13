@@ -101,8 +101,8 @@ void Networks::loop()
             found = true;
         }
 
-        //! nothing found — rescan every 2 minutes
-        if (!found)
+        //! nothing found — rescan every 2 minutes (but not while a scan is already running)
+        if (!found && !scanning)
         {
             if (lastRescanTime == 0 || millis() - lastRescanTime > 120000)
             {
@@ -136,10 +136,17 @@ void Networks::initialize()
     else
     {
         Report.printf("No valid WiFi config in EEPROM, starting normal initialization.\n");
+        //! Single WiFi init — avoid double-init (which causes addApbChangeCallback
+        //! duplicate errors and corrupts the scan state).
+        WiFi.mode(WIFI_STA);
+        WiFi.setAutoReconnect(false);  //!< prevent NVS auto-reconnect during scans
+        WiFi.setHostname(REPORT_NAME);
+        WiFi.disconnect(false, true);  //!< clear NVS AP credentials, keep WiFi on
     }
 
     readNetworkFile();
-    scanNetworks();
+    //! Scan is intentionally deferred — the WiFi radio is not RF-stable until
+    //! setup() completes. loop() triggers the first scan via lastRescanTime==0.
 }
 
 /**
@@ -149,6 +156,30 @@ void Networks::scanNetworks()
 {
     scanFailTime = 0;  //!< cancel any pending retry
     WiFi.scanDelete(); //!< clear stale results so we don't get 0 from a cached scan
+
+    if (_scanFailCount >= 3)
+    {
+        //! Async scan has failed repeatedly — fall back to synchronous scan.
+        //! Blocks loop for ~2s but is reliable on modules where async is broken.
+        Report.printf("Async scan failed %d times — trying synchronous scan\n", _scanFailCount);
+        int16_t n = WiFi.scanNetworks(false, false);
+        if (n > 0)
+        {
+            _scanFailCount = 0;
+            Report.printf("Sync scan found %d networks\n", n);
+            for (int16_t i = 0; i < n; i++)
+                addNetwork(WiFi.SSID(i), "", true, WiFi.RSSI(i));
+            networksChanged = true;
+            WiFi.scanDelete();
+        }
+        else
+        {
+            Report.printf("Sync scan also failed\n");
+            scanFailTime = millis();
+        }
+        return;
+    }
+
     scanning = true;
     WiFi.scanNetworks(true);
     Report.print("Starting WiFi Scan...\n");
@@ -171,12 +202,15 @@ bool Networks::processScanResults()
     if (WiFiScanStatus == WIFI_SCAN_FAILED)
     { //!< scan failed (e.g. WiFi busy connecting) — reset and retry after a delay
         scanning = false;
+        _scanFailCount++;
         scanFailTime = millis();
+        Report.printf("WiFi scan failed after %lums (fail #%d)\n", millis() - _scanStartedAt, _scanFailCount);
         return false;
     }
     else
     { //!< Found Zero or more Wireless Networks
         scanning = false;
+        _scanFailCount = 0;
         Report.printf("Found %d networks\n", WiFiScanStatus);
         for (uint8_t i = 0; i < WiFiScanStatus; i++)
             addNetwork(WiFi.SSID(i), "", true, WiFi.RSSI(i));
@@ -454,6 +488,13 @@ void Networks::handleConnectionSuccess()
 
     saveWiFiConfig();
     esp_wifi_set_ps(WIFI_PS_NONE); //!< disable power saving — prevents radio sleeping and dropping at distance
+
+    // Register mDNS so the device is reachable at HOST_NAME.local on the LAN
+    if (MDNS.begin(HOST_NAME))
+    {
+        MDNS.addService("http", "tcp", 80);
+        Report.printf("      mDNS: %s.local\n", HOST_NAME);
+    }
 
     extern char bootDiag[];
     WiFiClientSecure client;

@@ -69,6 +69,27 @@ The footer shows *Generated: Month DD, YYYY*. This date is injected via the `DOC
 
 - `.env` and `.env.local` files in backend and frontend (do NOT commit these)
 
+## ESP32 Device Discovery
+
+The backend (`stephenBackEnd/src/esp.ts`) discovers ESP32 devices via three mechanisms:
+
+1. **Subnet scan** — scans 192.168.x.1–254 at startup and every 20 minutes
+2. **Self-registration** — each ESP32 calls `GET /api/esp/register?ip=<ip>` on boot
+3. **mDNS bridge** — a host-side systemd service watches avahi-browse and forwards
+   announcements to the same `/register` endpoint with `?source=mDNS`
+
+The backend runs in a Dokku container which cannot receive mDNS multicast directly,
+so the bridge script runs on the **host**.
+
+**Bridge script files:** `mDNS scripts/` (repo root)
+- `esp-mdns-bridge.sh` — installed to `/usr/local/bin/` on the host
+- `esp-mdns-bridge.service` — installed to `/etc/systemd/system/` on the host
+- `README.md` — install steps and endpoint reference
+
+Non-ESP mDNS devices (e.g. printers, PCs) are registered separately via
+`GET /api/esp/mDNSOtherRegister?name=<name>&ip=<ip>` and shown in a second
+table on the ESP32 admin page.
+
 ## commands and scripts
 
 - prompt window is powershell on windows

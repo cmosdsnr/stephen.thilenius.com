@@ -44,6 +44,8 @@ Relays::Relays(uint8_t motionPin, uint8_t lightsRelay, uint8_t fillRelay, uint8_
     _fill = false;
     _lock = false;
     _lockh = false;
+    _percentFill = 0;
+    _percentLights = 0;
 }
 
 /**
@@ -101,6 +103,7 @@ void Relays::LightsOff()
     {
         tabs->tab[1]->changed = true;
         _lights = false;
+        _percentLights = 0;
         _blockMotion = millis();
     }
 }
@@ -131,7 +134,7 @@ void Relays::FillOn()
         _lastFillHigh = millis();
         tabs->tab[1]->changed = true;
         _fill = true;
-        _msToFill = static_cast<TabConfig *>(tabs->tab[CONFIG_TAB])->getFillTime();
+        _msToFill = static_cast<TabCoffee *>(tabs->tab[COFFEE_TAB])->getFillTime();
     }
 }
 
@@ -145,6 +148,7 @@ void Relays::FillOff()
     {
         tabs->tab[1]->changed = true;
         _fill = false;
+        _percentFill = 0;
     }
 }
 
@@ -183,7 +187,7 @@ void Relays::LockOn()
 void Relays::LockOff()
 {
     digitalWrite(_lockRelay, LOW);
-    if (_fill)
+    if (_lock)
     {
         tabs->tab[1]->changed = true;
         _lock = false;
@@ -230,6 +234,21 @@ void Relays::LockhOff()
 }
 
 /**
+ * @brief Toggle the lock hold relay on or off.
+ */
+void Relays::LockhToggle()
+{
+    if (!_lockh)
+    {
+        LockhOn();
+    }
+    else
+    {
+        LockhOff();
+    }
+}
+
+/**
  * @brief Per-loop relay housekeeping.
  *
  * Auto-turns off lights after 5 minutes and fill after the configured
@@ -245,19 +264,19 @@ void Relays::loop()
             LightsOff();
         }
         else
-            _percentLights = 100 - (millis() - _lastMotionHigh) / 30000;
+            _percentLights = 100 - 100 * (millis() - _lastMotionHigh) / (5 * 60 * 1000);
     }
 
     if (_fill)
     {
-        if ((millis() - _lastFillHigh) > _msToFill)
+        if (_msToFill == 0 || (millis() - _lastFillHigh) > _msToFill)
         {
             _percentFill = 0;
             FillOff();
         }
         else
         {
-            _percentFill = 100.0 - (float)(millis() - _lastFillHigh) / _msToFill;
+            _percentFill = 100 - 100 * (millis() - _lastFillHigh) / _msToFill;
         }
     }
 }

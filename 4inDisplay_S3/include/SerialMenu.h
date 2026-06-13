@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <array>
+#include "ProjectConfig.h"
 
 #define USE_SERIAL 0x01
 #define WEB_SERIAL 0x02
@@ -40,20 +41,8 @@ const char *const p_freq_dur[] = {"Frequency (Hz)", "Duration (ms)"};
  * @brief Main menu definition.
  */
 constexpr MenuItem menu0[] = {{'1', "SSID menu", 0, nullptr},
-#ifdef GLIDERPORT
-                              {'2', "Gliderport menu", 0, nullptr},
-#endif
-#ifdef GARAGE
-                              {'2', "Garage menu", 0, nullptr},
-#endif
-#ifdef DESK
-                              {'2', "Desk menu", 0, nullptr},
-#endif
-#ifdef POWERMETER
-                              {'2', "PowerMeter menu", 0, nullptr},
-#endif
-#ifdef SPRINKLER
-                              {'2', "Sprinkler menu", 0, nullptr},
+#ifdef PROJECT_MENU_LABEL
+                              {'2', PROJECT_MENU_LABEL, 0, nullptr},
 #endif
                               {'a', "IP Address", 0, nullptr},
                               {'b', "List SPIFFS filesystem", 0, nullptr},
@@ -79,24 +68,7 @@ constexpr MenuItem menu1[] = {{'0', "Main menu", 0, nullptr},
                               {'f', "regenerate network file", 0, nullptr},
                               {'?', "This help", 0, nullptr}};
 
-#ifdef GLIDERPORT
-#include "Gliderport/SerialCommands.h"
-#endif
-#ifdef GARAGE
-#include "Garage/SerialCommands.h"
-#endif
-#ifdef DESK
-#include "Desk/SerialCommands.h"
-#endif
-#ifdef COFFEE
-#include "Coffee/SerialCommands.h"
-#endif
-#ifdef POWERMETER
-#include "Power/SerialCommands.h"
-#endif
-#ifdef SPRINKLER
-#include "Sprinkler/SerialCommands.h"
-#endif
+// Project-specific SerialCommands.h is included via ProjectConfig.h above
 
 // Array of pointers to MenuItem arrays
 constexpr const MenuItem *menus[] = {menu0, menu1, menu2};

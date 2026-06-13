@@ -49,6 +49,7 @@ export const API = {
      * `GET /api/esp/ESPupdate`
      */
     ESPupdate: () => url('/api/esp/ESPupdate'),
+    mDNSOther: () => url('/api/esp/mDNSOther'),
 
     // -------------------------------------------------------------------------
     // Power Meter

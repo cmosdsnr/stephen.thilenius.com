@@ -13,7 +13,7 @@ const template: GameStep = {
     outputLists: Array(8).fill([]),                              // list of possible words with the current rounds selections/matches
     combinedList: [],                                            // combined list of all unique words in 'outputLists' (updated when 'outputLists' is updated)
     individualBestGuess: Array(8).fill(""),                      // best guess for each word
-    individualBestGuessStd: Array(8).fill(0),                    // best guess' std for each word
+    individualBestGuessScore: Array(8).fill(0),                   // best guess' expected-remaining-candidates score for each word
     bestGuess: "",                                               // best guess for all words combined
     finished: Array(8).fill(false),                              // all five match: word is solved, or was solved previously
     greyed: Array(8).fill(false),                                // changed something earlier, making tis step not valid
@@ -184,16 +184,15 @@ export function useGameState(getNextBestWord: (c: GameStep, idx: number) => Prom
         // if we have not decided on an next word yet, let's get one
         if (c.bestGuess === "") {
             for (let i = 0; i < numberWords; i++) {
-                if (c.inputLists[i].length > 2) {
+                if (c.inputLists[i].length > 0) {
+                    // Always call getNextBestWord regardless of list size.
+                    // The old threshold (> 2) skipped evaluation for 1–2 word lists,
+                    // which left the Top 20 table frozen at the previous step's values
+                    // and prevented score-1 in-list promotion from being reflected.
                     setWorking(i);
                     const best: RankedGuess = await getNextBestWord(c, i)
                     c.individualBestGuess[i] = best.word;
-                    c.individualBestGuessStd[i] = best.std;
-                }
-                else if (c.inputLists[i].length > 0) {
-
-                    c.individualBestGuess[i] = c.inputLists[i][0];
-                    c.individualBestGuessStd[i] = 0;
+                    c.individualBestGuessScore[i] = best.score;
                 }
             }
             setWorking(-1);
@@ -212,16 +211,13 @@ export function useGameState(getNextBestWord: (c: GameStep, idx: number) => Prom
     const recalculateWord = async () => {
         c = { ...gameData[gameData.length - 1] }
         for (let i = 0; i < numberWords; i++) {
-            if (c.inputLists[i].length > 2) {
+            if (c.inputLists[i].length > 0) {
+                // Same fix as nextWord: always evaluate so the Top 20 table
+                // reflects the current state even for 1–2 word lists.
                 setWorking(i);
                 const best: RankedGuess = await getNextBestWord(c, i)
                 c.individualBestGuess[i] = best.word;
-                c.individualBestGuessStd[i] = best.std;
-            }
-            else if (c.inputLists[i].length > 0) {
-
-                c.individualBestGuess[i] = c.inputLists[i][0];
-                c.individualBestGuessStd[i] = 0;
+                c.individualBestGuessScore[i] = best.score;
             }
         }
         setWorking(-1);
@@ -232,7 +228,11 @@ export function useGameState(getNextBestWord: (c: GameStep, idx: number) => Prom
         }
 
         setNextWord();
-        setGameData([...gameData, c])
+        // Replace the last step in-place rather than appending.
+        // recalculateWord() starts from a copy of the last step and updates it with
+        // the computed best word — it should overwrite that same slot, not push a new one.
+        // Appending was causing the game to start one step ahead with a blank selection.
+        setGameData([...gameData.slice(0, -1), c])
         setCurrent(c)
     }
 

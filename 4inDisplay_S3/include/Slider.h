@@ -150,7 +150,7 @@ private:
     uint16_t _margin = 0;
     bool _invert = false;
     // moveTo
-    int16_t _sliderPos;
+    int16_t _sliderPos = 0;
     uint16_t _kposPrev;
 
     // checkTouch

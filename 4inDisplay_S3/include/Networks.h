@@ -211,6 +211,8 @@ private:
     unsigned long scanFailTime = 0;
     unsigned long lastRescanTime = 0;
     unsigned long lastConnectAttemptTime = 0;
+    unsigned long _scanStartedAt = 0;
+    uint8_t _scanFailCount = 0; // consecutive async scan failures
     uint8_t count = 0;
     int8_t selectedIndex = -1;
     networkStruct *selectedNetwork = nullptr;
